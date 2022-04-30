@@ -1,20 +1,37 @@
 module github.com/kosctelecom/horus
 
-go 1.14
+go 1.18
 
 require (
-	github.com/golang/mock v1.3.1 // indirect
-	github.com/jmoiron/sqlx v1.2.0
-	github.com/lib/pq v1.2.0
-	github.com/mitchellh/copystructure v1.0.0
-	github.com/nats-io/nats.go v1.10.0
+	github.com/jmoiron/sqlx v1.3.5
+	github.com/lib/pq v1.10.5
+	github.com/mitchellh/copystructure v1.2.0
+	github.com/nats-io/nats.go v1.14.0
 	github.com/optiopay/kafka/v2 v2.1.1
-	github.com/prometheus/client_golang v1.1.0
-	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
+	github.com/prometheus/client_golang v1.12.1
+	github.com/teris-io/shortid v0.0.0-20201117134242-e59966efd125
 	github.com/vma/getopt v1.0.0
 	github.com/vma/glog v1.5.1
 	github.com/vma/gosnmp v1.22.4
 	github.com/vma/httplogger v1.0.0
 	github.com/vma/influxclient v1.0.0
-	google.golang.org/appengine v1.6.5 // indirect
+)
+
+require (
+	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/golang/mock v1.4.4 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/snappy v0.0.1 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/nats-io/nats-server/v2 v2.8.1 // indirect
+	github.com/nats-io/nkeys v0.3.0 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
+	github.com/prometheus/client_model v0.2.0 // indirect
+	github.com/prometheus/common v0.32.1 // indirect
+	github.com/prometheus/procfs v0.7.3 // indirect
+	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
 )
