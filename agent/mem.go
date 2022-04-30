@@ -12,14 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !linux
+//go:build !linux
 
 package agent
 
-// sysTotalMemory returns 0 on non linux systems.
-func sysTotalMemory() uint64 {
-	return 0
-}
+var (
+	totalMem float64
+	usedMem  float64
+)
+
+// updateTotalMem is a noop on non linux systems
+func updateTotalMem() {}
+
+// updateUsedMem is a noop on non linux systems
+func updateUsedMem() {}
 
 // CurrentMemLoad returns 0 on non linux systems.
 func CurrentMemLoad() float64 {
