@@ -25,11 +25,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gosnmp/gosnmp"
 	"github.com/kosctelecom/horus/log"
 	"github.com/kosctelecom/horus/model"
 	"github.com/mitchellh/copystructure"
 	"github.com/vma/glog"
-	"github.com/vma/gosnmp"
 )
 
 // Result represents a single snmp result

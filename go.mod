@@ -3,6 +3,7 @@ module github.com/kosctelecom/horus
 go 1.18
 
 require (
+	github.com/gosnmp/gosnmp v1.34.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.5
 	github.com/mitchellh/copystructure v1.2.0
@@ -12,7 +13,6 @@ require (
 	github.com/teris-io/shortid v0.0.0-20201117134242-e59966efd125
 	github.com/vma/getopt v1.0.0
 	github.com/vma/glog v1.5.1
-	github.com/vma/gosnmp v1.22.4
 	github.com/vma/httplogger v1.0.0
 	github.com/vma/influxclient v1.0.0
 )
@@ -20,7 +20,6 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/golang/mock v1.4.4 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
