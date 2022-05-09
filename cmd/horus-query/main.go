@@ -99,7 +99,7 @@ func main() {
 	}
 
 	if *devID != 0 {
-		if err = dispatcher.ConnectDB(*dsn); err != nil {
+		if err = dispatcher.ConnectDB(*dsn, ""); err != nil {
 			log.Fatalf("ERR: connect db: %v", err)
 		}
 		if err := dispatcher.PrepareQueries(); err != nil {

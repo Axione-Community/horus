@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	db                       *sqlx.DB
+	db, lockDB               *sqlx.DB
 	appLockConn              *sql.Conn
 	lockDevStmt              *sql.Stmt
 	unlockDevStmt            *sql.Stmt
@@ -42,23 +42,23 @@ var (
 )
 
 // ConnectDB connects to postgres db
-func ConnectDB(dsn string) error {
+func ConnectDB(dsn, lockDSN string) error {
 	var err error
 
-	log.Debug2f("opening db connection to %q", dsn)
-	db, err = sqlx.Open("postgres", dsn)
-	if err != nil {
-		return fmt.Errorf("connect db: %v", err)
+	db, err = dbOpen(dsn)
+	if err != nil || lockDSN == "" {
+		return err
 	}
+	lockDB, err = dbOpen(lockDSN)
 	return err
 }
 
 func AcquireLock(ctx context.Context, lockID int) error {
 	var err error
 
-	appLockConn, err = db.Conn(ctx)
+	appLockConn, err = lockDB.Conn(ctx)
 	if err != nil {
-		return fmt.Errorf("db conn: %v", err)
+		return fmt.Errorf("lock db conn: %v", err)
 	}
 	log.Infof("querying advisory lock from pg...")
 	_, err = appLockConn.ExecContext(ctx, `SELECT pg_advisory_lock($1)`, lockID)
@@ -174,6 +174,9 @@ func PrepareQueries() error {
 // ReleaseDB closes the db connection.
 func ReleaseDB() {
 	db.Close()
+	if lockDB != nil {
+		lockDB.Close()
+	}
 }
 
 // sqlExec executes the prepared statement stmt with its args,
@@ -185,4 +188,16 @@ func sqlExec(id interface{}, reqName string, stmt *sql.Stmt, args ...interface{}
 		log.Errorf("sql exec %s (%v): %v", reqName, id, err)
 	}
 	return err
+}
+
+func dbOpen(dsn string) (*sqlx.DB, error) {
+	var err error
+	var dbh *sqlx.DB
+
+	log.Debug2f("opening db connection to %q", dsn)
+	dbh, err = sqlx.Open("postgres", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("connect db %q: %v", dsn, err)
+	}
+	return dbh, err
 }
