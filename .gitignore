@@ -10,3 +10,6 @@ cmd/bin/*
 # coverage
 cover.out
 coverage.xml
+
+Makefile.local
+*.sw[po]
