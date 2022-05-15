@@ -127,13 +127,14 @@ func (s *SnmpRequest) UnmarshalJSON(data []byte) error {
 	s.snmpClis = make([]*GoSNMPWrapper, snmpParams.ConnectionCount)
 	for i := 0; i < snmpParams.ConnectionCount; i++ {
 		cli := &gosnmp.GoSNMP{
-			Target:    snmpParams.IPAddress,
-			Port:      uint16(snmpParams.Port),
-			Community: snmpParams.Community,
-			Version:   snmpParams.GoSnmpVersion(),
-			Timeout:   time.Duration(snmpParams.Timeout) * time.Second,
-			Retries:   snmpParams.Retries,
-			Logger:    gosnmp.NewLogger(s.Logger),
+			Target:         snmpParams.IPAddress,
+			Port:           uint16(snmpParams.Port),
+			Community:      snmpParams.Community,
+			Version:        snmpParams.GoSnmpVersion(),
+			Timeout:        time.Duration(snmpParams.Timeout) * time.Second,
+			MaxRepetitions: uint32(snmpParams.MaxRepetitions),
+			Retries:        snmpParams.Retries,
+			Logger:         gosnmp.NewLogger(s.Logger),
 		}
 		if snmpParams.Version == model.Version3 {
 			cli.SecurityModel = gosnmp.UserSecurityModel

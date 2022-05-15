@@ -55,6 +55,9 @@ type SnmpParams struct {
 	// Retries is the number of retries to attempt on timeout (default 1).
 	Retries int `db:"snmp_retries" json:"snmp_retries"`
 
+	// MaxRepetitions is the snmp max-repetitions param for GETBULK requests
+	MaxRepetitions int `db:"snmp_max_repetitions" json:"max_repetitions"`
+
 	// DisableBulk is a flag that disables snmp bulk requests (automatic for snmp v1).
 	DisableBulk bool `db:"snmp_disable_bulk" json:"snmp_disable_bulk,omitempty"`
 

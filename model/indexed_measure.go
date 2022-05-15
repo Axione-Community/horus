@@ -73,7 +73,7 @@ type IndexedMeasure struct {
 	// ToNats is a flag telling if the results are exported to NATS.
 	ToNats bool `db:"to_nats"`
 
-	// LabelsOnly tell wehere this measure contains only labels.
+	// LabelsOnly tell wether this measure contains only labels.
 	LabelsOnly bool `db:"-"`
 }
 

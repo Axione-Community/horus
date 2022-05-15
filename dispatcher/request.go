@@ -65,6 +65,7 @@ func RequestFromDB(devID int) (model.SnmpRequest, error) {
                                        snmp_retries,
                                        snmp_timeout,
                                        snmp_version,
+                                       snmp_max_repetitions,
                                        snmpv3_auth_passwd,
                                        snmpv3_auth_proto,
                                        snmpv3_auth_user,
