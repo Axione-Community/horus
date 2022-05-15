@@ -432,6 +432,7 @@ func (x *IndexedResults) Filter(meas model.IndexedMeasure) {
 	for _, ir := range x.Results {
 		val := fmt.Sprint(ir[meas.FilterPos].Value)
 		match := meas.FilterRegex.MatchString(val)
+		log.Debug3f(">> %s - filtering value `%v` against filter %v: match=%v", meas.Name, val, meas.FilterRegex, match)
 		if (match && !meas.InvertFilterMatch) || (!match && meas.InvertFilterMatch) {
 			filtered = append(filtered, ir)
 		}
