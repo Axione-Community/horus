@@ -17,6 +17,8 @@ package agent
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"os/exec"
 	"sort"
 	"strconv"
@@ -44,14 +46,8 @@ type PingMeasure struct {
 	// IPAddr is the ip address of the pinged host
 	IPAddr string
 
-	// Category is the device category (for profile identification)
-	Category string
-
-	// Vendor is the device vendor (for profile identification)
-	Vendor string
-
-	// Model is the device model (for profile identification)
-	Model string
+	// Tags is the tag map associated with the result
+	Tags map[string]string `json:"tags,omitempty"`
 
 	// Min is the minimal RTT in seconds
 	Min float64
@@ -196,11 +192,24 @@ func processOutput(req model.PingRequest, output string) []PingMeasure {
 		}
 		for _, host := range req.Hosts {
 			if host.IPAddr == ipAddr {
-				meas.HostID = host.ID
-				meas.Hostname = host.Name
-				meas.Category = host.Category
-				meas.Vendor = host.Vendor
-				meas.Model = host.Model
+				meas.Tags = map[string]string{
+					"id":         strconv.Itoa(host.ID),
+					"host":       host.Name,
+					"ip_address": meas.IPAddr,
+					"category":   host.Category,
+					"vendor":     host.Vendor,
+					"model":      host.Model,
+				}
+				if host.Tags != "" {
+					var hostTags map[string]interface{}
+					if err := json.Unmarshal([]byte(host.Tags), &hostTags); err != nil {
+						log.Errorf("host tag json unmarshal: %v", err)
+					} else {
+						for k, v := range hostTags {
+							meas.Tags[k] = fmt.Sprint(v)
+						}
+					}
+				}
 				break
 			}
 		}

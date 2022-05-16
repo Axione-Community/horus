@@ -62,6 +62,10 @@ type PingHost struct {
 	// IPAddr is the target ip address
 	IPAddr string `db:"ip_address" json:"ip_address"`
 
+	// Tags is the influx tags (and prometheus labels) added to
+	// each measurement of this device.
+	Tags string `db:"tags" json:"tags,omitempty"`
+
 	// Category is the equipment category (for profile identification)
 	Category string `db:"category" json:"category"`
 

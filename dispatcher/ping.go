@@ -43,6 +43,7 @@ func PingHosts() ([]model.PingHost, error) {
 	err := db.Select(&hosts, `SELECT d.hostname,
                                      d.id,
                                      COALESCE(d.ip_address, '') AS ip_address,
+                                     d.tags,
                                      p.category,
                                      p.model,
                                      p.vendor

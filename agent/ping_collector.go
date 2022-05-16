@@ -14,11 +14,7 @@
 
 package agent
 
-import (
-	"strconv"
-
-	"github.com/kosctelecom/horus/log"
-)
+import "github.com/kosctelecom/horus/log"
 
 // PingCollector is a prometheus collector
 type PingCollector struct {
@@ -34,66 +30,38 @@ func (c *PingCollector) Push(meas PingMeasure) {
 
 	log.Debug2f(">> posting ping measures for %s at %v", meas.IPAddr, meas.Stamp)
 	pingMin := PromSample{
-		Name:  "ping_min_duration_seconds",
-		Desc:  "min ping RTT time on this measure",
-		Stamp: meas.Stamp,
-		Labels: map[string]string{
-			"id":         strconv.Itoa(meas.HostID),
-			"host":       meas.Hostname,
-			"ip_address": meas.IPAddr,
-			"category":   meas.Category,
-			"vendor":     meas.Vendor,
-			"model":      meas.Model,
-		},
-		Value: meas.Min,
+		Name:   "ping_min_duration_seconds",
+		Desc:   "min ping RTT time on this measure",
+		Stamp:  meas.Stamp,
+		Labels: meas.Tags,
+		Value:  meas.Min,
 	}
 	c.promSamples <- &pingMin
 
 	pingMax := PromSample{
-		Name:  "ping_max_duration_seconds",
-		Desc:  "max ping RTT time on this measure",
-		Stamp: meas.Stamp,
-		Labels: map[string]string{
-			"id":         strconv.Itoa(meas.HostID),
-			"host":       meas.Hostname,
-			"ip_address": meas.IPAddr,
-			"category":   meas.Category,
-			"vendor":     meas.Vendor,
-			"model":      meas.Model,
-		},
-		Value: meas.Max,
+		Name:   "ping_max_duration_seconds",
+		Desc:   "max ping RTT time on this measure",
+		Stamp:  meas.Stamp,
+		Labels: meas.Tags,
+		Value:  meas.Max,
 	}
 	c.promSamples <- &pingMax
 
 	pingAvg := PromSample{
-		Name:  "ping_avg_duration_seconds",
-		Desc:  "average ping RTT time on this measure",
-		Stamp: meas.Stamp,
-		Labels: map[string]string{
-			"id":         strconv.Itoa(meas.HostID),
-			"host":       meas.Hostname,
-			"ip_address": meas.IPAddr,
-			"category":   meas.Category,
-			"vendor":     meas.Vendor,
-			"model":      meas.Model,
-		},
-		Value: meas.Avg,
+		Name:   "ping_avg_duration_seconds",
+		Desc:   "average ping RTT time on this measure",
+		Stamp:  meas.Stamp,
+		Labels: meas.Tags,
+		Value:  meas.Avg,
 	}
 	c.promSamples <- &pingAvg
 
 	pingLoss := PromSample{
-		Name:  "ping_loss_ratio",
-		Desc:  "ping packet loss ratio on this measure",
-		Stamp: meas.Stamp,
-		Labels: map[string]string{
-			"id":         strconv.Itoa(meas.HostID),
-			"host":       meas.Hostname,
-			"ip_address": meas.IPAddr,
-			"category":   meas.Category,
-			"vendor":     meas.Vendor,
-			"model":      meas.Model,
-		},
-		Value: meas.Loss,
+		Name:   "ping_loss_ratio",
+		Desc:   "ping packet loss ratio on this measure",
+		Stamp:  meas.Stamp,
+		Labels: meas.Tags,
+		Value:  meas.Loss,
 	}
 	c.promSamples <- &pingLoss
 }
