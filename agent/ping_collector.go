@@ -64,4 +64,25 @@ func (c *PingCollector) Push(meas PingMeasure) {
 		Value:  meas.Loss,
 	}
 	c.promSamples <- &pingLoss
+
+	var down float64
+	if meas.Loss == 1 {
+		down = 1
+	}
+	pingUp := PromSample{
+		Name:   "ping_up",
+		Desc:   "device answers to ping requests",
+		Stamp:  meas.Stamp,
+		Labels: meas.Tags,
+		Value:  1 - down,
+	}
+	c.promSamples <- &pingUp
+	pingDown := PromSample{
+		Name:   "ping_down",
+		Desc:   "device does not answers to ping requests",
+		Stamp:  meas.Stamp,
+		Labels: meas.Tags,
+		Value:  down,
+	}
+	c.promSamples <- &pingDown
 }
