@@ -64,6 +64,7 @@ The post processors allow to normalize a retrieved metric that has a string or n
     - `parse-hex-le`: parses the hexadecimal string as a numeric value in little-endian order.
     - `parse-hex-be`: parses the hexadecimal string as a numeric value in big-endian order.
     - `extract-int` or `extract-float`: extracts a numeric value from a string. For example: "Rx level: -12.5 dBm" returns -12.5 as a float.
+    - `fmt-macaddr`: formats the OctetString as a mac-address
 
 - For numeric values:
     - `div-<divisor>` or `div:<divisor>`: divides the retrieved value by the divisor, a float number.

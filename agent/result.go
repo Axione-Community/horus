@@ -276,6 +276,15 @@ func MakeResult(pdu gosnmp.SnmpPDU, metric model.Metric) (Result, error) {
 					return res, fmt.Errorf("%s: invalid extracted float value `%s`: %v", res.Name, num, err)
 				}
 				res.Value = v
+			case "fmt-macaddr":
+				var buf strings.Builder
+				for i, b := range val {
+					if i > 0 {
+						buf.WriteString(":")
+					}
+					fmt.Fprintf(&buf, "%02x", b)
+				}
+				res.Value = buf.String()
 			}
 		case float64:
 			switch {
