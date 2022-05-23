@@ -39,6 +39,9 @@ type IndexedMeasure struct {
 	// IndexMetricID is the id of the metric used as index.
 	IndexMetricID NullInt64 `db:"index_metric_id"`
 
+	// IndexMetric is the name for the metric used as index.
+	IndexMetric string `db:"-"`
+
 	// IndexPos is the position of the index metric in the Metrics array.
 	IndexPos int `db:"-"`
 
@@ -48,6 +51,9 @@ type IndexedMeasure struct {
 
 	// FilterMetricID is the id of the metric on which the filter is applied.
 	FilterMetricID NullInt64 `db:"filter_metric_id"`
+
+	// FilterMetric is the name of the metric to filter against.
+	FilterMetric string `db:"-"`
 
 	// FilterPos is the index of the filter metric in the Metrics array.
 	FilterPos int `db:"-"`
@@ -73,7 +79,7 @@ type IndexedMeasure struct {
 	// ToNats is a flag telling if the results are exported to NATS.
 	ToNats bool `db:"to_nats"`
 
-	// LabelsOnly tell wether this measure contains only labels.
+	// LabelsOnly tells wether this measure contains only labels.
 	LabelsOnly bool `db:"-"`
 }
 
@@ -86,15 +92,14 @@ func (x *IndexedMeasure) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &im); err != nil {
 		return err
 	}
-	im.IndexPos = -1
 	if im.IndexMetricID.Valid {
-		for i, metric := range im.Metrics {
+		for _, metric := range im.Metrics {
 			if int64(metric.ID) == im.IndexMetricID.Int64 {
-				im.IndexPos = i
+				im.IndexMetric = metric.Name
 				break
 			}
 		}
-		if im.IndexPos == -1 {
+		if im.IndexMetric == "" {
 			return fmt.Errorf("indexed measure %s: IndexMetricID %d not found in metric list", im.Name, im.IndexMetricID.Int64)
 		}
 	}
@@ -104,15 +109,14 @@ func (x *IndexedMeasure) UnmarshalJSON(data []byte) error {
 	if im.FilterPattern == "" && im.FilterMetricID.Valid {
 		return fmt.Errorf("indexed measure %s: FilterPattern cannot be empty when FilterMetricID is defined", im.Name)
 	}
-	im.FilterPos = -1
 	if im.FilterPattern != "" {
-		for i, metric := range im.Metrics {
+		for _, metric := range im.Metrics {
 			if int64(metric.ID) == im.FilterMetricID.Int64 {
-				im.FilterPos = i
+				im.FilterMetric = metric.Name
 				break
 			}
 		}
-		if im.FilterPos == -1 {
+		if im.FilterMetric == "" {
 			return fmt.Errorf("indexed measure: invalid FilterMetricID %d, not in metric list", im.FilterMetricID.Int64)
 		}
 		var err error

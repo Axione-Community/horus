@@ -389,7 +389,7 @@ func (s *SnmpRequest) walkMeasure(ctx context.Context, measure model.IndexedMeas
 	}
 
 	var walkErr error
-	for i, grouped := range byOid {
+	for range byOid {
 		res := <-walkResults
 		if res.err != nil {
 			walkErr = fmt.Errorf("walk oid %s: %v", res.oid, res.err)
@@ -400,11 +400,24 @@ func (s *SnmpRequest) walkMeasure(ctx context.Context, measure model.IndexedMeas
 		} else {
 			s.Debugf(2, "walkMetric %s: skipping empty tabular result", res.oid)
 		}
-		if measure.IndexMetricID.Valid && int64(grouped[0].ID) == measure.IndexMetricID.Int64 {
-			// recompute index result position on tabResults
+	}
+
+	// computes index & filter metrics position on tabResults
+	for i, tabRes := range tabResults {
+		var firstRes []Result
+		for _, firstRes = range tabRes {
+			break
+		}
+		if measure.IndexMetric == firstRes[0].Name {
+			s.Debugf(3, "index metric %s position: %d", measure.IndexMetric, i)
 			measure.IndexPos = i
 		}
+		if measure.FilterMetric == firstRes[0].Name {
+			s.Debugf(3, "filter metric %s position: %d", measure.FilterMetric, i)
+			measure.FilterPos = i
+		}
 	}
+
 	indexed := MakeIndexed(s.UID, measure, tabResults)
 	s.Debugf(2, "walkMeasure: full index results count: %d", len(indexed.Results))
 	indexed.Filter(measure)
