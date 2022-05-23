@@ -55,7 +55,11 @@ We first need to create a postgres user and database. In the psql admin console,
 postgres=# CREATE ROLE horus WITH LOGIN ENCRYPTED PASSWORD 'secret';
 postgres=# CREATE DATABASE horus WITH OWNER horus;
 postgres=# GRANT ALL PRIVILEGES ON DATABASE horus TO horus;
+postgres=# CREATE ROLE horuslock WITH LOGIN ENCRYPTED PASSWORD 'secret2';
+postgres=# CREATE DATABASE horuslock WITH OWNER horuslock;
 ```
+
+The `horuslock` user and db are only required if the dispatcher will be used in active/passive mode. The active process will hold an advisory lock on this db to avoid locking the main db and blocking its auto-vacuum.
 
 Then we can import the table schema:
 
@@ -97,7 +101,7 @@ With the previous database config, we can start an agent and the dispatcher (pre
 
 ```
 $ ./cmd/bin/horus-agent -d1 --port 8000 --prom-max-age 900 --kafka-hosts kafka.kosc.local --kafka-partition 0 --kafka-topic horus
-$ ./cmd/bin/horus-dispatcher -c postgres://horus:secret@localhost/horus -d1
+$ ./cmd/bin/horus-dispatcher -d1 -c postgres://horus:secret@localhost/horus
 ```
 
 You can start the agent or the dispatcher without any argument to get all options and their usage.

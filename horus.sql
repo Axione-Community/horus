@@ -35,6 +35,7 @@ CREATE TABLE devices (
     snmp_port integer NOT NULL DEFAULT 161,
     snmp_retries integer NOT NULL DEFAULT 1,
     snmp_timeout integer NOT NULL DEFAULT 10,
+    snmp_max_repetitions integer NOT NULL DEFAULT 50,
     snmp_version character varying NOT NULL DEFAULT '2c',
     snmpv3_auth_passwd character varying NOT NULL DEFAULT '',
     snmpv3_auth_proto character varying NOT NULL DEFAULT '',

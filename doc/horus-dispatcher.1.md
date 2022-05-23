@@ -8,8 +8,8 @@ NAME
 SYNOPSIS
 ========
 
-| **horus-dispatcher** \[**-h**|**-v**] \[**-c** _url_] \[**-d** _level_] \[**-g** _seconds_] \[**-i** _address_] \[**-k** _seconds_] \[**-l** _value_]
-|                      \[**--log** _dir_] \[**--max-load-delta** _value_] \[**--ping-batch-count** _value_]
+| **horus-dispatcher** \[**-h**|**-v**] \[**-c** _url_] \[**-d** _level_] \[**-g** _seconds_] \[**-i** _address_] \[**-k** _seconds_] \[**--lock-dsn** url]
+|                      \[**-l** _value_] \[**--log** _dir_] \[**--max-load-delta** _value_] \[**--ping-batch-count** _value_]
 |                      \[**-p** _port_] \[**-q** _seconds_] \[**-r** _days_]
 |                      \[**--report-flush-freq hours**] \[**-u** _seconds_] \[**-w** _sec_]
 
@@ -55,6 +55,10 @@ Options
 -k, --agent-keepalive-freq
 
 :   Specifies the agent keep-alive requests frequency in seconds. Defaults to 30s.
+
+    --lock-dsn=url
+
+:   postgres db DSN to use for advisory locks in active/passive mode. Must be different from main DSN to avoid blocking auto-vacuums.
 
 -l, --lock-id=value
 

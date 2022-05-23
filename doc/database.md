@@ -10,7 +10,7 @@ Database structure
 
 - Lists all devices to poll and ping. Only `active` ones are taken into account.
 - Each device is part of a profile through the `profile_id` field. It defines the list of metrics to poll (see below).
-- The `is_polling` flag is set by the dispatcher to lock the device during the polling, it is unlocked when the dispatcher receives the poll report. A cleaner goroutine unlocks periodically locked devices with no polling.
+- The `is_polling` flag is set by the dispatcher to lock the device during the polling, it is unlocked when the dispatcher receives the poll report. A cleaner goroutine unlocks periodically locked devices with no ongoing poll.
 - The `last_polled_at` and `last_pinged_at` fields are updated by the dispatcher on each successful job submission.
 - The following table lists all fields with their description and default values:
 
@@ -32,6 +32,7 @@ Database structure
 | snmp\_port                 | int    | 161     | device snmp port.
 | snmp\_retries              | int    | 1       | number of snmp query retries (excluding initial query) in case of timeout.
 | snmp\_timeout              | int    | 10      | timeout in seconds for snmp queries.
+| snmp\_max\_repetitions     | int    | 50      | snmp max-repetions value for this equipment.
 | snmp\_version              | string | 2c      | device snmp version, one of `1`, `2c` or `3`.
 | snmpv3\_auth\_passwd       | string | ""      | snmp v3 authentication password.
 | snmpv3\_auth\_proto        | string | ""      | snmp v3 authentication protocol, one of `MD5` or `SHA`.
@@ -64,7 +65,7 @@ The post processors allow to normalize a retrieved metric that has a string or n
     - `parse-hex-le`: parses the hexadecimal string as a numeric value in little-endian order.
     - `parse-hex-be`: parses the hexadecimal string as a numeric value in big-endian order.
     - `extract-int` or `extract-float`: extracts a numeric value from a string. For example: "Rx level: -12.5 dBm" returns -12.5 as a float.
-    - `fmt-macaddr`: formats the OctetString as a mac-address
+    - `fmt-macaddr`: formats the `OctetString` value as a mac-address
 
 - For numeric values:
     - `div-<divisor>` or `div:<divisor>`: divides the retrieved value by the divisor, a float number.
