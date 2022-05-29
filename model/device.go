@@ -17,6 +17,8 @@ package model
 import (
 	"encoding/json"
 	"errors"
+
+	"github.com/lib/pq"
 )
 
 // Device represents an snmp device.
@@ -45,6 +47,10 @@ type Device struct {
 
 	// Profile is the device profile.
 	Profile
+
+	// AllowedAgentIDs is a list of the IDs of the only agents allowed to poll this device.
+	// No restriction if empty.
+	AllowedAgentIDs pq.Int64Array `db:"allowed_agent_ids" json:"-"`
 }
 
 // UnmarshalJSON implements the json Unmarshaler interface for Device type.

@@ -41,6 +41,7 @@ Database structure
 | snmpv3\_privacy\_proto     | string | ""      | snmp v3 privacy protocol, one of `DES` or `AES`.
 | snmpv3\_security\_level    | string | ""      | snmp v3 security level, one of `NoAuthNoPriv`, `AuthNoPriv` or `AuthPriv`.
 | tags                       | json   | {}      | json to export as labels or tags in all measures of this device. Default labels already include: id, hostname, category, vendor and model
+| allowed\_agent\_ids        | []int  | []      | list of the only agents IDs that are allowed to poll and ping this device. No restriction if empty.
 
 ## metrics table
 

@@ -72,7 +72,8 @@ func RequestFromDB(devID int) (model.SnmpRequest, error) {
                                        snmpv3_privacy_passwd,
                                        snmpv3_privacy_proto,
                                        snmpv3_security_level,
-                                       tags
+                                       tags,
+                                       allowed_agent_ids
                                   FROM devices d,
                                        profiles p
                                  WHERE d.profile_id = p.id

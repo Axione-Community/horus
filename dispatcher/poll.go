@@ -65,7 +65,7 @@ func SendPollingJobs(ctx context.Context) {
 				updateLastPolledAt(req)
 				return
 			}
-			agents := AgentsForDevice(req.Device.ID)
+			agents := AgentsForDevice(req.Device)
 			for i, agent := range agents {
 				log.Debug2f("%s - try #%d: sending req to agent #%d (%s)", req.UID, i, agent.ID, agent.name)
 				code, load, err := SendRequest(ctx, req, *agent)
@@ -78,21 +78,21 @@ func SendPollingJobs(ctx context.Context) {
 				}
 				switch code {
 				case http.StatusAccepted:
-					log.Debug2f(">>%s - inserting req entry", req.UID)
+					log.Debug2f("%s - inserting req entry", req.UID)
 					sqlExec(req.UID, "insertReportStmt", insertReportStmt, req.UID, req.Device.ID, agent.ID, status)
-					log.Debug2f(">>%s - updating dev last poll time", req.UID)
+					log.Debug2f("%s - updating dev last poll time", req.UID)
 					updateLastPolledAt(req)
-					log.Debug2f(">>%s - lock-updating agent load", req.UID)
+					log.Debug2f("%s - lock-updating agent load", req.UID)
 					currentAgentsMu.Lock()
-					log.Debug2f(">>>%s - before updating load: agent %s, load: avg=%.4f (%d entries)", req.UID, agent.name, agent.loadAvg, len(agent.lh.loads))
+					log.Debug2f("%s - before updating load: agent %s, load: avg=%.4f (%d entries)", req.UID, agent.name, agent.loadAvg, len(agent.lh.loads))
 					agent.setLoad(load)
-					log.Debug2f(">>>%s - after setting load: agent %s, load: last=%.2f avg=%.4f (%d entries)", req.UID, agent.name, load, agent.loadAvg, len(agent.lh.loads))
+					log.Debug2f("%s - after setting load: agent %s, load: last=%.2f avg=%.4f (%d entries)", req.UID, agent.name, load, agent.loadAvg, len(agent.lh.loads))
 					currentAgentsMu.Unlock()
-					log.Debug2f(">>%s - lock-updating job distrib map", req.UID)
+					log.Debug2f("%s - lock-updating job distrib map", req.UID)
 					jobDistribMu.Lock()
 					jobDistrib[req.Device.ID] = agent.name
 					jobDistribMu.Unlock()
-					log.Debug2f(">>%s - atomic increasing accepted count", req.UID)
+					log.Debug2f("%s - atomic increasing accepted count", req.UID)
 					atomic.AddInt64(&accepted, 1)
 					log.Debug2f("%s - request sent to agent #%d (load: %.4f)", req.UID, agent.ID, load)
 					return

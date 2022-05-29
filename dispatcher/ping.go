@@ -44,6 +44,7 @@ func PingHosts() ([]model.PingHost, error) {
                                      d.id,
                                      COALESCE(d.ip_address, '') AS ip_address,
                                      d.tags,
+                                     d.allowed_agent_ids,
                                      p.category,
                                      p.model,
                                      p.vendor
@@ -102,17 +103,21 @@ func SendPingRequests(ctx context.Context) {
 	maxAgentHosts := int(math.Ceil(float64(len(hosts)) / float64(len(agents))))
 	for _, host := range hosts {
 		agentID, ok := pingHostRepartition[host.ID]
-		if ok && agentFromID(agentID, agents).ID > 0 && len(agentHosts[agentID]) < maxAgentHosts {
-			log.Debug2f("host %d affected to previous agent %d", host.ID, agentID)
+		if ok && agentFromID(agentID, agents).ID > 0 && len(agentHosts[agentID]) < maxAgentHosts && agentAllowed(host, agentID) {
+			log.Debug2f("host #%d affected to previous agent #%d", host.ID, agentID)
 			agentHosts[agentID] = append(agentHosts[agentID], host)
 		} else {
-			log.Debug2f("host %d unaffected", host.ID)
+			log.Debug2f("host #%d previously unaffected", host.ID)
 			unaffectedHosts = append(unaffectedHosts, host)
 		}
 	}
 	for _, host := range unaffectedHosts {
-		agentID, minCount := leastLoadedAgent(agentHosts)
-		log.Debug2f("unaffected host %d affected to least loaded agent %d (host count: %d)", host.ID, agentID, minCount)
+		agentID, minCount := leastLoadedAllowedAgent(agentHosts, host)
+		if agentID == -1 {
+			log.Warningf("no suitable agent found to ping host #%d (%s), skipping", host.ID, host.Name)
+			continue
+		}
+		log.Debug2f("previously unaffected host #%d affected to least loaded agent #%d (host count: %d)", host.ID, agentID, minCount)
 		agentHosts[agentID] = append(agentHosts[agentID], host)
 		pingHostRepartition[host.ID] = agentID
 	}
@@ -180,16 +185,32 @@ func agentFromID(agentID int, agents []Agent) Agent {
 	return Agent{}
 }
 
-// leastLoadedAgent return the agent ID of the agentHosts map
+// leastLoadedAllowedAgent return the agent ID of the agentHosts map
 // with the lowest number of hosts.
-func leastLoadedAgent(agentHosts map[int][]model.PingHost) (int, int) {
+func leastLoadedAllowedAgent(agentHosts map[int][]model.PingHost, host model.PingHost) (int, int) {
 	var minAgentID = -1
 	var minCount = math.MaxInt32
 	for agentID, hosts := range agentHosts {
+		if !agentAllowed(host, agentID) {
+			continue
+		}
 		if len(hosts) < minCount {
 			minCount = len(hosts)
 			minAgentID = agentID
 		}
 	}
 	return minAgentID, minCount
+}
+
+// agentAllowed checks if the given agentID is allowed for this host based on its allowed agents list.
+func agentAllowed(host model.PingHost, agentID int) bool {
+	if len(host.AllowedAgentIDs) == 0 {
+		return true
+	}
+	for _, id := range host.AllowedAgentIDs {
+		if agentID == int(id) {
+			return true
+		}
+	}
+	return false
 }

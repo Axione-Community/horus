@@ -19,6 +19,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 // SnmpRequest represents a snmp poll request.
@@ -74,6 +76,10 @@ type PingHost struct {
 
 	// Model is the equipment model (for profile identification)
 	Model string `db:"model" json:"model"`
+
+	// AllowedAgentIDs is a list of the IDs of the  only agents allowed to ping this device.
+	// No restriction if empty.
+	AllowedAgentIDs pq.Int64Array `db:"allowed_agent_ids" json:"-"`
 }
 
 // PingRequest is a ping job sent to an agent.

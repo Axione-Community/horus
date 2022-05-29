@@ -27,7 +27,7 @@ import (
 	"github.com/kosctelecom/horus/model"
 )
 
-// loadHistory is the agent previous loads, used for load avg calculation.
+// loadHistory is the agent's previous loads, used for load avg calculation.
 type loadHistory struct {
 	// loads is a load map whose key is the timestamp returned by time.UnixNano()
 	// On each job post or keepalive, a new value is added and entries older than LoadAvgWindow are removed.
@@ -71,6 +71,14 @@ type Agent struct {
 // Agents is a map of Agent pointers with agent name as key.
 type Agents map[string]*Agent
 
+// ByLoad is an Agent slice implementing Sort interface
+// for sorting by average load.
+type ByLoad []*Agent
+
+func (a ByLoad) Len() int           { return len(a) }
+func (a ByLoad) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByLoad) Less(i, j int) bool { return a[i].loadAvg < a[j].loadAvg }
+
 var (
 	// MaxLoadDelta is the maximum average load difference allowed between agents
 	// before moving a device to the least loaded agent.
@@ -88,15 +96,7 @@ var (
 	jobDistribMu sync.RWMutex
 )
 
-// ByLoad is an Agent slice implementing Sort interface
-// for sorting by average load.
-type ByLoad []*Agent
-
-func (a ByLoad) Len() int           { return len(a) }
-func (a ByLoad) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByLoad) Less(i, j int) bool { return a[i].loadAvg < a[j].loadAvg }
-
-// AgentsForDevice return a list of agents to which send a polling request by order
+// AgentsForDevice returns a list of agents to which a polling request can be sent by order
 // of priority. We try to be sticky as much as possible but with balanced load:
 // - the current list of active agents is sorted by load
 // - if the device is not in jobDistrib map, this list is returned as is.
@@ -105,42 +105,65 @@ func (a ByLoad) Less(i, j int) bool { return a[i].loadAvg < a[j].loadAvg }
 //     loaded agent is under the MaxLoadDelta, we stick to this agent: a
 //     modified load-sorted list is returned where this agent is moved at
 //     the first position.
-//   - if the load difference exceeds MaxLoadDelta, we rebalance the
-//   load: the load sorted list is returned.
-func AgentsForDevice(devID int) []*Agent {
-	var workingAgents []*Agent
+//   - if the load difference exceeds MaxLoadDelta, we rebalance the load:
+//     the load sorted list is returned.
+// - if the device has an agent restriction (allowed agent list), we remove all other agents from the final
+//   list before returning it. In this case, a device can only be polled by one of the affected agents.
+func AgentsForDevice(dev model.Device) []*Agent {
+	var selectedAgents []*Agent
 	currAgents := currentAgentsCopy()
 	for k, a := range currAgents {
 		if a.Alive {
-			workingAgents = append(workingAgents, currAgents[k])
+			selectedAgents = append(selectedAgents, currAgents[k])
 		}
 	}
-	if len(workingAgents) == 0 {
+	if len(selectedAgents) == 0 {
 		return nil
 	}
 
-	log.Debug3f(">> dev#%d: working agents: %+v", devID, workingAgents)
-	sort.Sort(ByLoad(workingAgents))
+	log.Debug3f("dev#%d: working agents: %+v", dev.ID, selectedAgents)
+	sort.Sort(ByLoad(selectedAgents))
 	jobDistribMu.RLock()
-	index := getAgentIndex(jobDistrib[devID], workingAgents)
+	index := getAgentIndex(jobDistrib[dev.ID], selectedAgents)
 	jobDistribMu.RUnlock()
 	if index == -1 {
 		// previously used agent is not in list: send load sorted list
-		log.Debug2f(">> dev#%d: not in job list, req sent to load sorted agents [%s,...] ", devID, workingAgents[0])
-		return workingAgents
+		log.Debug2f("dev#%d: not in job list, req sent to load sorted agents [%s,...] ", dev.ID, selectedAgents[0])
+		return filterAllowedAgents(dev, selectedAgents)
 	}
 	// previously used agent is in list
-	agent := workingAgents[index]
-	loadDelta := agent.loadAvg - workingAgents[0].loadAvg
+	agent := selectedAgents[index]
+	loadDelta := agent.loadAvg - selectedAgents[0].loadAvg
 	if loadDelta <= MaxLoadDelta {
 		// acceptable load delta, use same agent first
-		workingAgents = append(workingAgents[:index], workingAgents[index+1:]...) // remove
-		workingAgents = append([]*Agent{agent}, workingAgents...)                 // unshift
-		log.Debug2f(">> dev#%d: stick to prev (%s), delta=%.2f", devID, agent, loadDelta)
+		selectedAgents = append(selectedAgents[:index], selectedAgents[index+1:]...) // remove
+		selectedAgents = append([]*Agent{agent}, selectedAgents...)                  // unshift
+		log.Debug2f("dev#%d: stick to prev (%s), delta=%.2f", dev.ID, agent, loadDelta)
 	} else {
-		log.Debug2f(">> dev#%d: req sent to load sorted agents [%s,...], delta=%.2f", devID, workingAgents[0], loadDelta)
+		log.Debug2f("dev#%d: req sent to load sorted agents [%s,...], delta=%.2f", dev.ID, selectedAgents[0], loadDelta)
 	}
-	return workingAgents
+	return filterAllowedAgents(dev, selectedAgents)
+}
+
+// filterAllowedAgents returns only allowed agents for this device from the agents list.
+// Returns initial list if allowed agents list is empty for this device (no restriction).
+func filterAllowedAgents(dev model.Device, agents []*Agent) []*Agent {
+	if len(dev.AllowedAgentIDs) == 0 {
+		return agents
+	}
+
+	log.Debug2f("dev#%d: has allowed agents list, filtering %d agents", dev.ID, len(agents))
+	var filtered []*Agent
+	for _, a := range agents {
+		for _, id := range dev.AllowedAgentIDs {
+			if a.ID == int(id) {
+				filtered = append(filtered, a)
+				break
+			}
+		}
+	}
+	log.Debug3f("dev#%d: filtered agents: %d", dev.ID, len(filtered))
+	return filtered
 }
 
 // CheckAgents sends a keepalive to each agent
@@ -155,7 +178,7 @@ func CheckAgents() error {
 		isAlive, load := agent.Check()
 		agent.Alive = isAlive
 		agent.setLoad(load)
-		log.Debugf("agent #%d (%s:%d): alive=%v load=%.2f loadAvg=%.2f", agent.ID, agent.Host, agent.Port, isAlive, load, agent.loadAvg)
+		log.Debugf("%s: alive=%v load=%.2f", agent, isAlive, load)
 		sqlExec("agent #"+strconv.Itoa(agent.ID), "checkAgentStmt", checkAgentStmt, agent.ID, isAlive, agent.loadAvg)
 		if !isAlive {
 			// unlock all devices locked on a failed agent
@@ -226,7 +249,7 @@ func ActiveAgentCount() int {
 // Note: key for comparision is agent name (host:port).
 func LoadAgents() error {
 	var agents []Agent
-	err := db.Select(&agents, `SELECT id,ip_address,port,is_alive
+	err := db.Select(&agents, `SELECT id, ip_address, port, is_alive
                                  FROM agents
                                 WHERE active = true
                              ORDER BY load`)
@@ -244,7 +267,7 @@ func LoadAgents() error {
 		a.lh = &loadHistory{loads: map[int64]float64{}}
 		newAgents[a.name] = &a
 	}
-	log.Debug2f(">> LoadAgents: new agents = %+v", newAgents)
+	log.Debug2f("LoadAgents: new agents = %+v", newAgents)
 
 	agentsCopy := currentAgentsCopy() // copy holds a rlock, must be called outside of next line lock
 	currentAgentsMu.Lock()
