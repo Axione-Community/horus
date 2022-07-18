@@ -426,11 +426,7 @@ func (x *IndexedResults) DedupDesc() {
 
 // Filter filters the indexed result against the regex filter..
 func (x *IndexedResults) Filter(meas model.IndexedMeasure) {
-	if meas.FilterPos == -1 {
-		return
-	}
-	if meas.FilterRegex == nil {
-		glog.Errorf("Filter (idx=%d): nil regexp", meas.FilterPos)
+	if meas.FilterPos == -1 || meas.FilterRegex == nil {
 		return
 	}
 	if meas.FilterPos < 0 {
