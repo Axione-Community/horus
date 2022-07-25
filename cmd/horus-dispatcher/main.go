@@ -239,3 +239,12 @@ func handleDebugLevel(w http.ResponseWriter, r *http.Request) {
 	glog.SetLevel(int32(dbgLevel))
 	w.WriteHeader(http.StatusOK)
 }
+
+func handleCheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	state := "slave"
+	if dispatcher.IsMaster {
+		state = "master"
+	}
+	fmt.Fprintf(w, `{"state":"%s"}`, state)
+}
