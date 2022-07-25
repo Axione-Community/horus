@@ -23,6 +23,7 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -109,7 +110,27 @@ func main() {
 		}
 	}()
 
+	http.HandleFunc(model.ReportURI, dispatcher.HandleReport)
+	http.HandleFunc(dispatcher.DeviceListURI, dispatcher.HandleDeviceList)
+	http.HandleFunc(dispatcher.DeviceCreateURI, dispatcher.HandleDeviceCreate)
+	http.HandleFunc(dispatcher.DeviceUpdateURI, dispatcher.HandleDeviceUpdate)
+	http.HandleFunc(dispatcher.DeviceUpsertURI, dispatcher.HandleDeviceUpsert)
+	http.HandleFunc(dispatcher.DeviceDeleteURI, dispatcher.HandleDeviceDelete)
+	http.HandleFunc("/r/check", handleCheck)
+	http.HandleFunc("/-/debug", handleDebugLevel)
+
+	var wg sync.WaitGroup
+
+	go func() {
+		wg.Add(1)
+		log.Debugf("starting report web server on %s:%d", *localIP, *port)
+		logger := httplogger.CommonLogger(log.Writer{})
+		glog.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", *localIP, *port), logger(http.DefaultServeMux)))
+		wg.Done()
+	}()
+
 	dispatcher.LocalIP, dispatcher.Port = *localIP, *port
+
 	if err := dispatcher.ConnectDB(*dsn, *lockDSN); err != nil {
 		glog.Exitf("connect db: %v", err)
 	}
@@ -123,6 +144,8 @@ func main() {
 			glog.Exitf("acquire lock: %v", err)
 		}
 	}
+
+	dispatcher.IsMaster = true
 
 	if err := dispatcher.PrepareQueries(); err != nil {
 		glog.Exitf("prepare queries: %v", err)
@@ -211,17 +234,7 @@ func main() {
 			}
 		}()
 	}
-
-	log.Debugf("starting report web server on %s:%d", *localIP, *port)
-	http.HandleFunc(model.ReportURI, dispatcher.HandleReport)
-	http.HandleFunc(dispatcher.DeviceListURI, dispatcher.HandleDeviceList)
-	http.HandleFunc(dispatcher.DeviceCreateURI, dispatcher.HandleDeviceCreate)
-	http.HandleFunc(dispatcher.DeviceUpdateURI, dispatcher.HandleDeviceUpdate)
-	http.HandleFunc(dispatcher.DeviceUpsertURI, dispatcher.HandleDeviceUpsert)
-	http.HandleFunc(dispatcher.DeviceDeleteURI, dispatcher.HandleDeviceDelete)
-	http.HandleFunc("/-/debug", handleDebugLevel)
-	logger := httplogger.CommonLogger(log.Writer{})
-	glog.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%d", *localIP, *port), logger(http.DefaultServeMux)))
+	wg.Wait()
 }
 
 func handleDebugLevel(w http.ResponseWriter, r *http.Request) {

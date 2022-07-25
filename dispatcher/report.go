@@ -25,6 +25,11 @@ import (
 
 // HandleReport saves the polling report to db and unlocks the device.
 func HandleReport(w http.ResponseWriter, r *http.Request) {
+	if !IsMaster {
+		http.Error(w, "Unavailable On Slave", http.StatusServiceUnavailable)
+		return
+	}
+
 	reqUID := r.FormValue("request_id")
 	agentID := r.FormValue("agent_id")
 	pollDur := r.FormValue("poll_duration_ms")

@@ -43,6 +43,9 @@ var (
 	// HTTPTimeout is the timeout in seconds for posting poll requests
 	HTTPTimeout = 3
 
+	// IsMaster tells wether this dispatcher is running as master (single or current active in active/passive setup).
+	IsMaster = false
+
 	sid = shortid.MustNew(0, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$.", 1373)
 )
 

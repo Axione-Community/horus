@@ -48,6 +48,10 @@ const (
 // to the GET request, returns a json body with the device with this id. Otherwise,
 // returns a json array with all devices ordered by id.
 func HandleDeviceList(w http.ResponseWriter, r *http.Request) {
+	if !IsMaster {
+		jsonError(w, http.StatusServiceUnavailable, errors.New("Unavailable On Slave"))
+		return
+	}
 	if r.Method != "GET" {
 		jsonError(w, http.StatusMethodNotAllowed, errors.New("Method Not Allowed, use GET"))
 		return
@@ -136,6 +140,10 @@ func HandleDeviceList(w http.ResponseWriter, r *http.Request) {
 
 // HandleDeviceCreate implements the CRUD create handler
 func HandleDeviceCreate(w http.ResponseWriter, r *http.Request) {
+	if !IsMaster {
+		jsonError(w, http.StatusServiceUnavailable, errors.New("Unavailable On Slave"))
+		return
+	}
 	if r.Method != "POST" {
 		jsonError(w, http.StatusMethodNotAllowed, errors.New("Method Not Allowed, use POST"))
 		return
@@ -233,6 +241,10 @@ func HandleDeviceCreate(w http.ResponseWriter, r *http.Request) {
 // HandleDeviceUpdate implements the CRUD update handler. All device required fields
 // must be defined in the json as for the insert request.
 func HandleDeviceUpdate(w http.ResponseWriter, r *http.Request) {
+	if !IsMaster {
+		jsonError(w, http.StatusServiceUnavailable, errors.New("Unavailable On Slave"))
+		return
+	}
 	if r.Method != "POST" {
 		jsonError(w, http.StatusMethodNotAllowed, errors.New("Method Not Allowed, use POST"))
 		return
@@ -304,6 +316,10 @@ func HandleDeviceUpdate(w http.ResponseWriter, r *http.Request) {
 // HandleDeviceUpsert implements the CRUD upsert handler. All device required fields
 // must be defined in the json as for the insert request.
 func HandleDeviceUpsert(w http.ResponseWriter, r *http.Request) {
+	if !IsMaster {
+		jsonError(w, http.StatusServiceUnavailable, errors.New("Unavailable On Slave"))
+		return
+	}
 	if r.Method != "POST" {
 		jsonError(w, http.StatusMethodNotAllowed, errors.New("Method Not Allowed, use POST"))
 		return
@@ -410,6 +426,10 @@ func HandleDeviceUpsert(w http.ResponseWriter, r *http.Request) {
 // HandleDeviceDelete implements the CRUD delete handler. The id of the device
 // to delete must be given in `id` param to the POST request.
 func HandleDeviceDelete(w http.ResponseWriter, r *http.Request) {
+	if !IsMaster {
+		jsonError(w, http.StatusServiceUnavailable, errors.New("Unavailable On Slave"))
+		return
+	}
 	if r.Method != "POST" {
 		jsonError(w, http.StatusMethodNotAllowed, errors.New("Method Not Allowed, use POST"))
 		return
