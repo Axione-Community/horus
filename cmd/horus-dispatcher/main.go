@@ -61,7 +61,8 @@ var (
 	logDir          = getopt.StringLong("log", 0, "", "directory for log files. If empty, all log goes to stderr", "dir")
 	snmpLoadAvgWin  = getopt.IntLong("load-avg-window", 'w', 30, "SNMP load avg calculation window", "sec")
 	lockID          = getopt.IntLong("lock-id", 'l', 0, "pg advisory lock id to ensure single running process (0 to disable)")
-	lockDSN         = getopt.StringLong("lock-dsn", 0, "", "postgres db DSN to use for advisory locks. Must be different from main DSN.", "url")
+	lockDSN         = getopt.StringLong("lock-dsn", 'C', "", "postgres db DSN to use for advisory locks. Must be different from main DSN.", "url")
+	clusterHosts    = getopt.ListLong("cluster-hosts", 'H', "list of all hosts of the dispatcher cluster", "host1:port1,host2:port2,...")
 )
 
 func main() {
@@ -129,7 +130,7 @@ func main() {
 		wg.Done()
 	}()
 
-	dispatcher.LocalIP, dispatcher.Port = *localIP, *port
+	dispatcher.LocalIP, dispatcher.Port, dispatcher.ClusterHosts = *localIP, *port, *clusterHosts
 
 	if err := dispatcher.ConnectDB(*dsn, *lockDSN); err != nil {
 		glog.Exitf("connect db: %v", err)

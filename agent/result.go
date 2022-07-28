@@ -148,7 +148,7 @@ type PollResult struct {
 	IsPartial bool `json:"is_partial,omitempty"`
 
 	stamp       time.Time
-	reportURL   string
+	reportURLs  []string
 	metricCount int
 	pollErr     error
 }
@@ -174,12 +174,12 @@ func (r SnmpRequest) MakePollResult() PollResult {
 		}
 	}
 	return PollResult{
-		RequestID: r.UID,
-		AgentID:   r.AgentID,
-		IPAddr:    r.Device.IPAddress,
-		PollStart: time.Now(),
-		Tags:      tags,
-		reportURL: r.ReportURL,
+		RequestID:  r.UID,
+		AgentID:    r.AgentID,
+		IPAddr:     r.Device.IPAddress,
+		PollStart:  time.Now(),
+		Tags:       tags,
+		reportURLs: r.ReportURLs,
 	}
 }
 
@@ -192,7 +192,7 @@ func (p PollResult) Copy() PollResult {
 	}
 	cpy := cp.(PollResult)
 	cpy.stamp = p.stamp
-	cpy.reportURL = p.reportURL
+	copy(cpy.reportURLs, p.reportURLs)
 	cpy.metricCount = p.metricCount
 	cpy.pollErr = p.pollErr
 	return cpy
@@ -485,38 +485,46 @@ func handlePollResults() {
 func (p *PollResult) sendReport() {
 	log.Debugf("report: id=%s agent_id=%d poll_err=%q poll_dur=%dms metric_count=%d",
 		p.RequestID, p.AgentID, p.PollErr, p.Duration, p.metricCount)
-	if p.reportURL == "" {
-		glog.Warningf("no report url for req %s", p.RequestID)
+	if len(p.reportURLs) == 0 {
+		glog.Warningf("no report urls for req %s", p.RequestID)
 		return
 	}
-	req, err := http.NewRequest("GET", p.reportURL, nil)
-	if err != nil {
-		glog.Errorf("sendReport: %v", err)
-		return
-	}
-	q := req.URL.Query()
-	q.Add("request_id", p.RequestID)
-	q.Add("agent_id", strconv.Itoa(p.AgentID))
-	q.Add("poll_duration_ms", strconv.FormatInt(p.Duration, 10))
-	q.Add("poll_error", p.PollErr)
-	q.Add("metric_count", strconv.Itoa(p.metricCount))
-	q.Add("current_load", fmt.Sprintf("%.4f", CurrentSNMPLoad()))
-	req.URL.RawQuery = q.Encode()
 
-	client := &http.Client{Timeout: 3 * time.Second}
-	for i := 0; i < 3; i++ {
+outerLoop:
+	for i := 0; i < 2; i++ {
 		if i > 0 {
-			time.Sleep(time.Duration(1<<uint(i-1)) * 3 * time.Second)
+			time.Sleep(time.Duration(1<<uint(i-1)) * 2 * time.Second)
 		}
-		log.Debug2f("%s - posting report, try #%d/3", p.RequestID, i+1)
-		resp, err := client.Do(req)
-		if err != nil {
-			glog.Errorf("send report, try #%d/3: %v", i+1, err)
-			continue
+
+		for _, url := range p.reportURLs {
+			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+				glog.Errorf("sendReport to %s: %v", url, err)
+				return
+			}
+			q := req.URL.Query()
+			q.Add("request_id", p.RequestID)
+			q.Add("agent_id", strconv.Itoa(p.AgentID))
+			q.Add("poll_duration_ms", strconv.FormatInt(p.Duration, 10))
+			q.Add("poll_error", p.PollErr)
+			q.Add("metric_count", strconv.Itoa(p.metricCount))
+			q.Add("current_load", fmt.Sprintf("%.4f", CurrentSNMPLoad()))
+			req.URL.RawQuery = q.Encode()
+			client := &http.Client{Timeout: 2 * time.Second}
+			log.Debug2f("%s - posting report to %s, attempt #%d/2", p.RequestID, url, i+1)
+			resp, err := client.Do(req)
+			if err != nil {
+				glog.Errorf("send report to %s, attempt #%d/2: %v", url, i+1, err)
+				continue
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusServiceUnavailable {
+				log.Debugf("%s - skipping slave dispatcher %s", p.RequestID, url)
+				continue
+			}
+			log.Debug2f("%s - report posted to %s: attempt #%d/2, status %s", p.RequestID, url, i+1, resp.Status)
+			break outerLoop
 		}
-		log.Debug2f("%s - report posted at try #%d/3, status: %s", p.RequestID, i+1, resp.Status)
-		resp.Body.Close()
-		break
 	}
 }
 

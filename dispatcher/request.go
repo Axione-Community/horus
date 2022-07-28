@@ -46,6 +46,9 @@ var (
 	// IsMaster tells wether this dispatcher is running as master (single or current active in active/passive setup).
 	IsMaster = false
 
+	// ClusterHosts is a list of all dispatcher hosts part of the same cluster
+	ClusterHosts []string
+
 	sid = shortid.MustNew(0, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$.", 1373)
 )
 
@@ -215,9 +218,15 @@ func RequestFromDB(devID int) (model.SnmpRequest, error) {
 			req.IndexedMeasures = append(req.IndexedMeasures, indexed)
 		}
 	}
-	if LocalIP != "" && Port != 0 {
-		req.ReportURL = fmt.Sprintf("http://%s:%d%s", LocalIP, Port, model.ReportURI)
+
+	req.ReportURLs = append(req.ReportURLs, fmt.Sprintf("http://%s:%d%s", LocalIP, Port, model.ReportURI))
+	for _, host := range ClusterHosts {
+		if host == fmt.Sprintf("%s:%d", LocalIP, Port) {
+			continue
+		}
+		req.ReportURLs = append(req.ReportURLs, fmt.Sprintf("http://%s%s", host, model.ReportURI))
 	}
+
 	uid, err := sid.Generate()
 	if err != nil {
 		return req, fmt.Errorf("shortid: %v", err)

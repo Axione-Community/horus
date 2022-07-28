@@ -37,8 +37,9 @@ type SnmpRequest struct {
 	// IndexedMeasures is a list of tabular measures to poll
 	IndexedMeasures []IndexedMeasure `json:",omitempty"`
 
-	// ReportURL is the url where the polling result report is sent
-	ReportURL string `json:"report_url"`
+	// ReportURLs is the list of urls where the polling result report is sent in order
+	// (this dispatcher first, followed by backups)
+	ReportURLs []string `json:"report_urls"`
 
 	// Device is the network device to poll.
 	Device Device `json:"device"`
@@ -122,8 +123,10 @@ func (r *SnmpRequest) UnmarshalJSON(data []byte) error {
 	if req.UID == "" {
 		return errors.New("invalid request: request_id cannot be empty")
 	}
-	if req.ReportURL != "" && !strings.HasPrefix(req.ReportURL, "http://") && !strings.HasPrefix(req.ReportURL, "https://") {
-		req.ReportURL = "http://" + req.ReportURL
+	for i, url := range req.ReportURLs {
+		if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+			req.ReportURLs[i] = "http://" + url
+		}
 	}
 	if req.Device.ID == 0 {
 		return errors.New("invalid request: missing device")
