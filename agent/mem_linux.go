@@ -17,7 +17,9 @@
 package agent
 
 import (
-	"runtime"
+	"io/ioutil"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -26,7 +28,8 @@ import (
 
 var (
 	totalMem             float64
-	totalMemSamplingFreq = 30 * time.Minute
+	totalMemSamplingFreq = 60 * time.Minute
+	sysPageSize          = syscall.Getpagesize()
 
 	usedMem             float64
 	usedMemSamplingFreq = 10 * time.Second
@@ -35,25 +38,56 @@ var (
 func updateTotalMem() {
 	ticker := time.NewTicker(totalMemSamplingFreq)
 	defer ticker.Stop()
-	for ; true; <-ticker.C {
-		log.Debug2(">> querying sys total mem stats")
-		in := &syscall.Sysinfo_t{}
-		if err := syscall.Sysinfo(in); err != nil {
-			log.Errorf("sysinfo: %v", err)
+	for {
+		select {
+		case <-ticker.C:
+			totalMem = getTotalMem()
 		}
-		totalMem = float64(in.Totalram) * float64(in.Unit)
 	}
 }
 
 func updateUsedMem() {
 	ticker := time.NewTicker(usedMemSamplingFreq)
 	defer ticker.Stop()
-	for ; true; <-ticker.C {
-		log.Debug2(">> querying heap mem stats")
-		var m runtime.MemStats
-		runtime.ReadMemStats(&m)
-		usedMem = float64(m.HeapAlloc)
+	for {
+		select {
+		case <-ticker.C:
+			usedMem = getUsedMem()
+		}
 	}
+}
+
+func getUsedMem() float64 {
+	log.Debug3("retrieving mem stats from /proc")
+	data, err := ioutil.ReadFile("/proc/self/stat")
+	if err != nil {
+		log.Errorf("read self/stat: %v", err)
+		return 0
+	}
+	fields := strings.Fields(string(data))
+	rss, err := strconv.ParseInt(fields[23], 10, 64)
+	if err != nil {
+		log.Errorf("parse RSS fields: %v", err)
+		return 0
+	}
+	return float64(uintptr(rss) * uintptr(sysPageSize))
+}
+
+func getTotalMem() float64 {
+	log.Debug3("retrieving sys total mem from /proc")
+	data, err := ioutil.ReadFile("/proc/meminfo")
+	if err != nil {
+		log.Errorf("read meminfo: %v", err)
+		return 0
+	}
+	ln := strings.Split(string(data), "\n")[0]
+	memTotalField := strings.Fields(ln)[1]
+	totalMem, err := strconv.ParseInt(memTotalField, 10, 64)
+	if err != nil {
+		log.Errorf("parse totalMem %q: %v", memTotalField, err)
+		return 0
+	}
+	return float64(totalMem * 1024)
 }
 
 // CurrentMemLoad returns the current relative memory usage of the agent.
