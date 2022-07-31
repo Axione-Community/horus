@@ -63,6 +63,7 @@ var (
 	lockID          = getopt.IntLong("lock-id", 'l', 0, "pg advisory lock id to ensure single running process (0 to disable)")
 	lockDSN         = getopt.StringLong("lock-dsn", 'C', "", "postgres db DSN to use for advisory locks. Must be different from main DSN.", "url")
 	clusterHosts    = getopt.ListLong("cluster-hosts", 'H', "list of all hosts of the dispatcher cluster", "host1:port1,host2:port2,...")
+	dbMaxSnmpJobs   = getopt.IntLong("db-max-snmp-jobs", 'm', 200, "maximum number of snmp jobs to retrieve from db at each query")
 )
 
 func main() {
@@ -167,7 +168,7 @@ func main() {
 			for range keepAliveTick.C {
 				loops++
 				if loops%10 == 0 {
-					// reload agents from db every 10 keep alives
+					// reload agents from db every 10 keep-alives
 					dispatcher.LoadAgents()
 				}
 				dispatcher.CheckAgents()
@@ -176,6 +177,7 @@ func main() {
 	}
 
 	if *dbSnmpQueryFreq > 0 {
+		dispatcher.MaxSnmpJobs = *dbMaxSnmpJobs
 		log.Debug("starting poller goroutine")
 		go func() {
 			pollTick := time.NewTicker(time.Duration(*dbSnmpQueryFreq) * time.Second)
