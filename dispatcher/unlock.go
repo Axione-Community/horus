@@ -36,26 +36,21 @@ func UnlockDevices() {
 
 	var currentReqs []string
 	for _, agent := range agents {
-		if !agent.Alive || len(agent.lh.loads) == 0 {
-			// agent is not working, no need to query
-			sqlExec("agent #"+strconv.Itoa(agent.ID), "unlockFromAgent", unlockFromAgentStmt, agent.ID)
-			continue
-		}
-
 		log.Debug2f("unlock dev: get ongoing from agent #%d (%s:%d)", agent.ID, agent.Host, agent.Port)
 		client := &http.Client{Timeout: time.Duration(HTTPTimeout) * time.Second}
 		resp, err := client.Get(fmt.Sprintf("http://%s:%d%s", agent.Host, agent.Port, model.OngoingURI))
 		if err != nil {
 			log.Debug2f("agent #%d: get ongoing: %v", agent.ID, err)
+			sqlExec("agent #"+strconv.Itoa(agent.ID), "unlockFromAgent", unlockFromAgentStmt, agent.ID)
 			continue
 		}
+		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
 			log.Warningf("agent #%d: get ongoing: %s", agent.ID, resp.Status)
-			resp.Body.Close()
+			sqlExec("agent #"+strconv.Itoa(agent.ID), "unlockFromAgent", unlockFromAgentStmt, agent.ID)
 			continue
 		}
 		b, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
 		if err != nil {
 			log.Errorf("agent #%d: get ongoing: read body: %v", agent.ID, err)
 			continue
