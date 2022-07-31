@@ -75,7 +75,7 @@ func Init() error {
 			requests: make(chan *SnmpRequest, MaxSNMPRequests),
 			workers:  make(chan struct{}, MaxSNMPRequests),
 		}
-		pollResults = make(chan PollResult, MaxSNMPRequests)
+		pollResults = make(chan PollResult, 2*MaxSNMPRequests)
 		log.Debug2("starting dispatcher loop")
 		go snmpq.dispatch(StopCtx)
 		log.Debug2("starting results handler")
@@ -152,6 +152,9 @@ func (s *snmpQueue) dispatch(ctx context.Context) {
 func (s *snmpQueue) poll(ctx context.Context, req *SnmpRequest) {
 	defer func() {
 		req.Debug(1, "done polling")
+		ongoingMu.Lock()
+		delete(ongoingReqs, req.UID)
+		ongoingMu.Unlock()
 		<-s.workers
 	}()
 	req.Debug(1, "start polling")

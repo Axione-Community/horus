@@ -452,9 +452,6 @@ func (x *IndexedResults) Filter(meas model.IndexedMeasure) {
 func handlePollResults() {
 	for res := range pollResults {
 		res.stamp = time.Now()
-		ongoingMu.Lock()
-		delete(ongoingReqs, res.RequestID)
-		ongoingMu.Unlock()
 		if res.pollErr != nil {
 			log.Debugf("%s - poll failed: %s, partial result? %v", res.RequestID, res.PollErr, res.IsPartial)
 		}
