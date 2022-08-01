@@ -183,6 +183,10 @@ func ReleaseDB() {
 // and logs and returns the db error if any
 func sqlExec(id interface{}, reqName string, stmt *sql.Stmt, args ...interface{}) error {
 	log.Debug3f("%v - sql exec %s", id, reqName)
+	if stmt == nil {
+		log.Errorf("sql exec %s (%v): nil stmt", reqName, id)
+		return fmt.Errorf("sql exec %s: nil stmt", reqName)
+	}
 	_, err := stmt.Exec(args...)
 	if err != nil {
 		log.Errorf("sql exec %s (%v): %v", reqName, id, err)
