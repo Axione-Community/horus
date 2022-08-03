@@ -306,7 +306,6 @@ func SendRequest(ctx context.Context, req model.SnmpRequest, agent Agent) (stCod
 	if err != nil {
 		return
 	}
-	log.Debug3f("%s - payload to send: %s", req.UID, buf)
 	htReq, err := http.NewRequest("POST", agent.snmpJobURL, bytes.NewBuffer(buf))
 	if err != nil {
 		err = fmt.Errorf("http request: %v", err)
