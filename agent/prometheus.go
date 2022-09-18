@@ -201,11 +201,11 @@ func (c *PromCollector) Collect(ch chan<- prometheus.Metric) {
 	start := time.Now()
 	c.Lock()
 	for _, s := range c.Samples {
-		// make current samples copy first
-		samples = append(samples, s)
+		dup := s.copyWithMergedLabels()
+		samples = append(samples, dup)
 	}
 	c.Unlock()
-
+	log.Debug2f("%d current snmp samples copied for scrape", len(samples))
 	for _, sample := range samples {
 		desc := prometheus.NewDesc(sample.Name, sample.Desc, nil, sample.Labels)
 		metr, err := prometheus.NewConstMetric(desc, prometheus.UntypedValue, sample.Value)
@@ -258,4 +258,25 @@ func coalesceInt(nums ...int) int {
 		}
 	}
 	return 0
+}
+
+func (s *PromSample) copyWithMergedLabels() *PromSample {
+	dup := &PromSample{
+		Name:  s.Name,
+		Desc:  s.Desc,
+		Value: s.Value,
+		Stamp: s.Stamp,
+	}
+	l := map[string]string{}
+	for k, v := range s.Tags {
+		l[k] = v
+	}
+	for k, v := range s.Labels {
+		l[k] = v
+	}
+	for k, v := range s.MetricLabels {
+		l[k] = v
+	}
+	dup.Labels = l
+	return dup
 }
