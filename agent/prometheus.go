@@ -165,6 +165,7 @@ func (c *PromCollector) processSamples() {
 			c.Unlock()
 		case <-sweepTick:
 			minStamp := time.Now().Add(-c.MaxResultAge)
+			log.Debug2f("coll %p: cleaning samples older than %s", c, minStamp.Format(time.RFC3339))
 			c.Lock()
 			var outdatedCount int
 			for id, res := range c.Samples {
@@ -178,7 +179,7 @@ func (c *PromCollector) processSamples() {
 				c.Samples = make(map[uint64]*PromSample)
 			}
 			c.Unlock()
-			log.Debugf("%d prom samples after cleanup, %d outdated samples deleted", len(c.Samples), outdatedCount)
+			log.Debugf("coll %p: %d prom samples after cleanup, %d outdated samples deleted", c, len(c.Samples), outdatedCount)
 		}
 	}
 }
@@ -200,8 +201,6 @@ func (c *PromCollector) Collect(ch chan<- prometheus.Metric) {
 	c.Unlock()
 
 	for _, sample := range samples {
-		log.Debug3f("scraping sample %s id=%s ifName=%s ts=%d (%s)", sample.Name, sample.Labels["id"], sample.Labels["ifName"],
-			sample.Stamp.Unix(), sample.Stamp.Format(time.RFC3339))
 		desc := prometheus.NewDesc(sample.Name, sample.Desc, nil, sample.Labels)
 		metr, err := prometheus.NewConstMetric(desc, prometheus.UntypedValue, sample.Value)
 		if err != nil {

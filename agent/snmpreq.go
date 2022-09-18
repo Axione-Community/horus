@@ -239,7 +239,6 @@ func (s *SnmpRequest) getMeasure(ctx context.Context, meas model.ScalarMeasure) 
 				s.Debugf(1, "con#%d: getting scalar oid %s (%s)", i, oid, metric.Name)
 				pkt, err := cli.GetWithCtx(ctx, []string{oid})
 				s.Debugf(2, "con#%d oid %s: got snmp reply, pushing...", i, oid)
-				s.Debugf(3, ">> pkt=%+v, err=%v", pkt, err)
 				snmpResults <- snmpgetResult{metric, pkt, err}
 				s.Debugf(2, "con#%d oid %s: pushed", i, oid)
 				if ErrIsUnreachable(err) {
@@ -267,7 +266,6 @@ func (s *SnmpRequest) getMeasure(ctx context.Context, meas model.ScalarMeasure) 
 			continue
 		}
 		for _, pdu := range snmpres.pkt.Variables {
-			s.Debugf(2, "pdu = %#v", pdu)
 			res, err := MakeResult(pdu, metric)
 			if err != nil {
 				s.Warningf("get %s: make result: %v", metric.Name, err)
@@ -315,7 +313,7 @@ func (s *SnmpRequest) walkMetric(ctx context.Context, grouped []model.Metric, co
 						continue
 					}
 					idx = strings.Join(submatches[1:], ".") // starts at 1 to skip the entire oid match
-					s.Debugf(3, "con#%d: %s - idx `%s` extracted from oid %s", conIdx, metric.Name, idx, pdu.Name)
+					s.Debugf(4, "con#%d: %s - idx `%s` extracted from oid %s", conIdx, metric.Name, idx, pdu.Name)
 				}
 				res.Index = idx
 				tabResult[idx] = append(tabResult[idx], res)

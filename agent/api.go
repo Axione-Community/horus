@@ -68,7 +68,6 @@ func HandleSnmpRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	r.Body.Close()
-	log.Debug3f("new request: %s", b)
 
 	var req SnmpRequest
 	if err := json.Unmarshal(b, &req); err != nil {
