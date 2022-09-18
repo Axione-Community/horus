@@ -135,24 +135,22 @@ func (c *SnmpCollector) Push(pollRes PollResult) {
 
 		for _, indexedRes := range indexed.Results {
 			labels := map[string]string{}
+			for k, v := range pollRes.Tags {
+				labels[k] = v
+			}
 			for _, res := range indexedRes {
-				if res.Name[:1] == "_" {
-					// XXX temp hack XXX skip metrics whose name starts with `_`
-					continue
-				}
 				if res.AsLabel {
 					labels[res.Name] = fmt.Sprint(res.Value)
 				}
 			}
+
 			if len(labels) == len(indexedRes) {
+				// label-only measure
 				if !indexed.LabelsOnly {
 					log.Debugf(">> skipping non label-only measure %s with only labels", indexed.Name)
 					continue
 				}
 				log.Debug2f("indexed measure %s is labels-only", indexed.Name)
-				for k, v := range pollRes.Tags {
-					labels[k] = v
-				}
 				sample := PromSample{
 					Name:   indexed.Name,
 					Value:  1,
@@ -166,13 +164,6 @@ func (c *SnmpCollector) Push(pollRes PollResult) {
 			for _, res := range indexedRes {
 				if res.AsLabel {
 					continue
-				}
-				l := map[string]string{}
-				for k, v := range pollRes.Tags {
-					l[k] = v
-				}
-				for k, v := range labels {
-					l[k] = v
 				}
 				var value float64
 				switch v := res.Value.(type) {
@@ -191,6 +182,10 @@ func (c *SnmpCollector) Push(pollRes PollResult) {
 					}
 				default:
 					continue
+				}
+				l := map[string]string{}
+				for k, v := range labels {
+					l[k] = v
 				}
 				l["oid"] = res.Oid
 				l["index"] = res.Index
