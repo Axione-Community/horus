@@ -159,7 +159,7 @@ func (c *PromCollector) processSamples() {
 	for {
 		select {
 		case s := <-c.promSamples:
-			id := computeKey(*s)
+			id := s.computeKey()
 			c.Lock()
 			c.Samples[id] = s
 			c.Unlock()
@@ -216,15 +216,15 @@ func (c *PromCollector) Collect(ch chan<- prometheus.Metric) {
 
 // computeKey calculates a consistent hash for the sample. It is used as the
 // samples map key instead of the `sid` string for memory efficiency.
-func computeKey(sample PromSample) uint64 {
-	lnames := make([]string, 0, len(sample.Labels))
-	for k := range sample.Labels {
+func (s *PromSample) computeKey() uint64 {
+	lnames := make([]string, 0, len(s.Labels))
+	for k := range s.Labels {
 		lnames = append(lnames, k)
 	}
 	sort.Strings(lnames)
-	sid := sample.Name
+	sid := s.Name
 	for _, label := range lnames {
-		sid += label + sample.Labels[label]
+		sid += label + s.Labels[label]
 	}
 	h := fnv.New64a()
 	h.Write([]byte(sid))
