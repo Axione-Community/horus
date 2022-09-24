@@ -184,7 +184,10 @@ func (s *SnmpRequest) Dial(ctx context.Context) error {
 func (s *SnmpRequest) Close() {
 	s.Debugf(2, "closing all snmp cons...")
 	for _, cli := range s.snmpClis {
-		cli.Conn.Close()
+		if cli.Conn != nil {
+			cli.Conn.Close()
+		}
+		cli.GoSNMP = nil
 	}
 }
 

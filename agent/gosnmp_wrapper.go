@@ -29,8 +29,13 @@ func (w *GoSNMPWrapper) DialWithCtx(ctx context.Context) error {
 		if w.Conn != nil {
 			w.Conn.Close()
 		}
+		w.GoSNMP = nil
 		return fmt.Errorf("request cancelled while connecting")
 	case err := <-errCh:
+		if err != nil && w.Conn != nil {
+			w.Conn.Close()
+			w.GoSNMP = nil
+		}
 		return err
 	}
 }
