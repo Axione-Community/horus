@@ -129,12 +129,12 @@ func (s *snmpQueue) dispatch(ctx context.Context) {
 			log.Debug("cancelled, terminating snmp dispatch loop")
 			return
 		case req := <-s.requests:
-			req.Debug(1, "new request from queue")
+			req.Debug(2, "new request from queue")
 			atomic.AddInt64(&waiting, 1)
 			sincePrevPoll := time.Since(prevPoll)
 			if sincePrevPoll < InterPollDelay {
 				// sleep if needed, to smooth the load
-				req.Debug(1, "waiting before poll")
+				req.Debug(2, "waiting before poll")
 				time.Sleep(InterPollDelay - sincePrevPoll)
 			}
 			if MockMode {

@@ -20,6 +20,6 @@ type Writer struct{}
 // Write implements the writer interface and
 // sends the input to the logger at debug level.
 func (l Writer) Write(b []byte) (int, error) {
-	Debug(string(b))
+	Debug2(string(b))
 	return len(b), nil
 }

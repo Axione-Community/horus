@@ -192,7 +192,7 @@ func (s *SnmpRequest) Close() {
 // Returns the last non-nil error from gosnmp.
 func (s *SnmpRequest) Get(ctx context.Context) (results []ScalarResults, err error) {
 	for _, scalar := range s.ScalarMeasures {
-		s.Debugf(1, "polling scalar measure %s", scalar.Name)
+		s.Debugf(2, "polling scalar measure %s", scalar.Name)
 		var res []Result
 		res, err = s.getMeasure(ctx, scalar)
 		if err != nil {
@@ -236,7 +236,7 @@ func (s *SnmpRequest) getMeasure(ctx context.Context, meas model.ScalarMeasure) 
 					cli.Community = s.Device.Community
 				}
 				oid := string(metric.Oid)
-				s.Debugf(1, "con#%d: getting scalar oid %s (%s)", i, oid, metric.Name)
+				s.Debugf(2, "con#%d: getting scalar oid %s (%s)", i, oid, metric.Name)
 				pkt, err := cli.GetWithCtx(ctx, []string{oid})
 				s.Debugf(2, "con#%d oid %s: got snmp reply, pushing...", i, oid)
 				snmpResults <- snmpgetResult{metric, pkt, err}
@@ -289,7 +289,7 @@ func (s *SnmpRequest) walkMetric(ctx context.Context, grouped []model.Metric, co
 	cached, ok := s.rc.cache[oid.CacheKey(useAltCommunity)]
 	s.rc.RUnlock()
 	if ok {
-		s.Debugf(1, "con#%d: returning cached res map for oid %s", conIdx, oid)
+		s.Debugf(2, "con#%d: returning cached res map for oid %s", conIdx, oid)
 		return cached, nil
 	}
 
@@ -358,7 +358,7 @@ func (s *SnmpRequest) walkSingleMetric(ctx context.Context, metr model.Metric) (
 // If one or more of the walk requests resulted in an error, the last one is returned.
 func (s *SnmpRequest) walkMeasure(ctx context.Context, measure model.IndexedMeasure) (IndexedResults, error) {
 	var tabResults []TabularResults
-	s.Debugf(1, "getting indexed measure %s", measure.Name)
+	s.Debugf(2, "getting indexed measure %s", measure.Name)
 	if len(measure.Metrics) == 0 {
 		s.Errorf("walk indexed: measure %s: metric list empty", measure.Name)
 		return IndexedResults{}, nil
@@ -380,7 +380,7 @@ func (s *SnmpRequest) walkMeasure(ctx context.Context, measure model.IndexedMeas
 				s.Debugf(2, "con#%d: start walking indexed oid %s [%s], %d metric(s)", conIdx, oid, name, len(grouped))
 				groupedRes, err := s.walkMetric(ctx, grouped, conIdx, measure.UseAlternateCommunity)
 				walkResults <- snmpwalkResult{oid, groupedRes, err}
-				s.Debugf(1, "con#%d: done walking indexed oid %s [%s]: took %v", conIdx, oid, name, time.Since(start).Truncate(time.Millisecond))
+				s.Debugf(2, "con#%d: done walking indexed oid %s [%s]: took %v", conIdx, oid, name, time.Since(start).Truncate(time.Millisecond))
 			}
 			s.Debugf(2, "con#%d: measure %s: oid loop terminated", conIdx, measure.Name)
 		}(conIdx)
