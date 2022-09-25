@@ -28,44 +28,38 @@ type SnmpCollector struct {
 // Push convert a poll result to prometheus samples and push them to the sample queue.
 func (c *SnmpCollector) Push(pollRes PollResult) {
 	pollTimeout := PromSample{
-		Name:   "snmp_poll_timeout_count",
-		Desc:   "current snmp poll failed due to timeout",
-		Stamp:  pollRes.stamp,
-		Labels: map[string]string{},
-		Value:  float64(0),
+		Name:  "snmp_poll_timeout_count",
+		Desc:  "current snmp poll failed due to timeout",
+		Stamp: pollRes.stamp,
+		Tags:  pollRes.Tags,
+		Value: float64(0),
 	}
 	if ErrIsTimeout(pollRes.pollErr) {
 		pollTimeout.Value = 1
 	}
 	pollRefused := PromSample{
-		Name:   "snmp_poll_refused_count",
-		Desc:   "current snmp poll failed due to connection refused",
-		Stamp:  pollRes.stamp,
-		Labels: map[string]string{},
-		Value:  float64(0),
+		Name:  "snmp_poll_refused_count",
+		Desc:  "current snmp poll failed due to connection refused",
+		Stamp: pollRes.stamp,
+		Tags:  pollRes.Tags,
+		Value: float64(0),
 	}
 	if ErrIsRefused(pollRes.pollErr) {
 		pollRefused.Value = 1
 	}
 	pollDur := PromSample{
-		Name:   "snmp_poll_duration_seconds",
-		Desc:   "snmp polling duration",
-		Stamp:  pollRes.stamp,
-		Labels: map[string]string{},
-		Value:  float64(pollRes.Duration / 1000),
+		Name:  "snmp_poll_duration_seconds",
+		Desc:  "snmp polling duration",
+		Stamp: pollRes.stamp,
+		Tags:  pollRes.Tags,
+		Value: float64(pollRes.Duration / 1000),
 	}
 	metricsCount := PromSample{
-		Name:   "snmp_poll_metric_count",
-		Desc:   "number of snmp metrics in poll result",
-		Stamp:  pollRes.stamp,
-		Labels: map[string]string{},
-		Value:  float64(pollRes.metricCount),
-	}
-	for k, v := range pollRes.Tags {
-		pollTimeout.Labels[k] = v
-		pollRefused.Labels[k] = v
-		pollDur.Labels[k] = v
-		metricsCount.Labels[k] = v
+		Name:  "snmp_poll_metric_count",
+		Desc:  "number of snmp metrics in poll result",
+		Stamp: pollRes.stamp,
+		Tags:  pollRes.Tags,
+		Value: float64(pollRes.metricCount),
 	}
 	if pollStatCollector != nil {
 		pollStatCollector.promSamples <- &pollTimeout
@@ -92,6 +86,7 @@ func (c *SnmpCollector) Push(pollRes PollResult) {
 					Name:   scalar.Name + "_" + res.Name,
 					Value:  1,
 					Stamp:  pollRes.stamp,
+					Tags:   pollRes.Tags,
 					Labels: map[string]string{},
 				}
 				sample.Labels[res.Name] = fmt.Sprint(res.Value)
@@ -117,11 +112,9 @@ func (c *SnmpCollector) Push(pollRes PollResult) {
 					Name:   scalar.Name + "_" + res.Name,
 					Value:  value,
 					Stamp:  pollRes.stamp,
+					Tags:   pollRes.Tags,
 					Labels: map[string]string{},
 				}
-			}
-			for k, v := range pollRes.Tags {
-				sample.Labels[k] = v
 			}
 			sample.Labels["oid"] = res.Oid
 			c.promSamples <- &sample
@@ -135,9 +128,6 @@ func (c *SnmpCollector) Push(pollRes PollResult) {
 
 		for _, indexedRes := range indexed.Results {
 			labels := map[string]string{}
-			for k, v := range pollRes.Tags {
-				labels[k] = v
-			}
 			for _, res := range indexedRes {
 				if res.AsLabel {
 					labels[res.Name] = fmt.Sprint(res.Value)
@@ -155,6 +145,7 @@ func (c *SnmpCollector) Push(pollRes PollResult) {
 					Name:   indexed.Name,
 					Value:  1,
 					Stamp:  pollRes.stamp,
+					Tags:   pollRes.Tags,
 					Labels: labels,
 				}
 				c.promSamples <- &sample
@@ -183,17 +174,16 @@ func (c *SnmpCollector) Push(pollRes PollResult) {
 				default:
 					continue
 				}
-				l := map[string]string{}
-				for k, v := range labels {
-					l[k] = v
-				}
-				l["oid"] = res.Oid
-				l["index"] = res.Index
+				mlabels := map[string]string{}
+				mlabels["oid"] = res.Oid
+				mlabels["index"] = res.Index
 				sample := PromSample{
-					Name:   indexed.Name + "_" + res.Name,
-					Value:  value,
-					Stamp:  pollRes.stamp,
-					Labels: l,
+					Name:         indexed.Name + "_" + res.Name,
+					Value:        value,
+					Stamp:        pollRes.stamp,
+					Tags:         pollRes.Tags,
+					Labels:       labels,
+					MetricLabels: mlabels,
 				}
 				c.promSamples <- &sample
 			}

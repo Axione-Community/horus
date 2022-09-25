@@ -37,8 +37,14 @@ type PromSample struct {
 	// Value is the metric value.
 	Value float64
 
-	// Labels is the metric label map.
+	// Tags is a map of labels common to a device
+	Tags map[string]string
+
+	// Labels is a map of labels common to a measure
 	Labels map[string]string
+
+	// MetricLabels is a map of labels specific to a metric (like index or oid)
+	MetricLabels map[string]string
 
 	// Stamp is the metric timestamp (the snmp poll start time).
 	Stamp time.Time
@@ -217,14 +223,27 @@ func (c *PromCollector) Collect(ch chan<- prometheus.Metric) {
 // computeKey calculates a consistent hash for the sample. It is used as the
 // samples map key instead of the `sid` string for memory efficiency.
 func (s *PromSample) computeKey() uint64 {
-	lnames := make([]string, 0, len(s.Labels))
-	for k := range s.Labels {
-		lnames = append(lnames, k)
+	keys := make([]string, 0, len(s.Tags)+len(s.Labels)+len(s.MetricLabels))
+	for k := range s.Tags {
+		keys = append(keys, k)
 	}
-	sort.Strings(lnames)
+	for k := range s.Labels {
+		keys = append(keys, k)
+	}
+	for k := range s.MetricLabels {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 	sid := s.Name
-	for _, label := range lnames {
-		sid += label + s.Labels[label]
+	for _, k := range keys {
+		v, ok := s.Tags[k]
+		if !ok {
+			v, ok = s.Labels[k]
+		}
+		if !ok {
+			v, ok = s.MetricLabels[k]
+		}
+		sid += k + v
 	}
 	h := fnv.New64a()
 	h.Write([]byte(sid))
