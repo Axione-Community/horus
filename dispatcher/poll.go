@@ -17,10 +17,8 @@ package dispatcher
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/kosctelecom/horus/log"
 	"github.com/kosctelecom/horus/model"
@@ -112,17 +110,6 @@ func SendPollingJobs(ctx context.Context) {
 				sqlExec(req.UID, "unlockDevStmt", unlockDevStmt, req.Device.ID)
 			}
 		}(ctx, req)
-		select {
-		case <-ctx.Done():
-			log.Debugf("cancelling all unposted jobs after #%d...", j+1)
-			for _, devID := range jobs[j+1:] {
-				log.Debug2f("unlocking dev #%d", devID)
-				sqlExec("dev#"+strconv.Itoa(devID), "unlockDevStmt", unlockDevStmt, devID)
-			}
-			return
-		case <-time.After(50 * time.Millisecond):
-			// wait a few moments to avoid flooding the agents
-		}
 	}
 	wg.Wait()
 	log.Debugf("processed %d job(s): accepted=%d discarded=%d", len(jobs), accepted, discarded)
