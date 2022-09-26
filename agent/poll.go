@@ -28,6 +28,7 @@ import (
 // snmpQueue is a fixed size snmp job queue.
 type snmpQueue struct {
 	size     int
+	used     int64
 	requests chan *SnmpRequest
 	workers  chan struct{}
 }
@@ -102,11 +103,12 @@ func Init() error {
 func AddSnmpRequest(req *SnmpRequest) bool {
 	select {
 	case snmpq.workers <- struct{}{}:
-		log.Debug2f("got worker, adding snmp req %s", req.UID)
+		log.Debug2f("got worker, adding snmp req %s, usage:%d/%d workers:%d", req.UID, snmpq.used, snmpq.size, len(snmpq.workers))
 		snmpq.requests <- req
+		atomic.AddInt64(&snmpq.used, 1)
 		return true
 	default:
-		log.Debug2("snmp work queue full")
+		log.Debug2f("snmp work queue full, usage:%d/%d workers:%d reqs:%d", snmpq.used, snmpq.size, len(snmpq.workers), len(snmpq.requests))
 		return false
 	}
 }
@@ -150,14 +152,7 @@ func (s *snmpQueue) dispatch(ctx context.Context) {
 // poll polls the snmp device. At the end, pushes the result
 // to the results queue and releases the worker slot.
 func (s *snmpQueue) poll(ctx context.Context, req *SnmpRequest) {
-	defer func() {
-		req.Debug(1, "done polling")
-		ongoingMu.Lock()
-		delete(ongoingReqs, req.UID)
-		ongoingMu.Unlock()
-		<-s.workers
-	}()
-	req.Debug(1, "start polling")
+	req.Debugf(1, "start polling, ongoing: %d, usage: %d/%d", len(ongoingReqs), s.used, s.size)
 	ongoingMu.Lock()
 	ongoingReqs[req.UID] = true
 	ongoingMu.Unlock()
@@ -167,11 +162,16 @@ func (s *snmpQueue) poll(ctx context.Context, req *SnmpRequest) {
 		res := req.MakePollResult() // needed for report
 		res.pollErr = err
 		pollResults <- res
-		return
+	} else {
+		pollResults <- req.Poll(ctx)
+		req.Close()
 	}
-	pollResults <- req.Poll(ctx)
-	req.Close()
-	return
+	ongoingMu.Lock()
+	delete(ongoingReqs, req.UID)
+	ongoingMu.Unlock()
+	<-s.workers
+	atomic.AddInt64(&s.used, -1)
+	req.Debugf(1, "done polling, ongoing: %d, usage: %d/%d", len(ongoingReqs), s.used, s.size)
 }
 
 // updateStats updates and prints various agent stats.

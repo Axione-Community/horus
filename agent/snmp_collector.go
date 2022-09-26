@@ -127,6 +127,7 @@ func (c *SnmpCollector) Push(pollRes PollResult) {
 		}
 
 		for _, indexedRes := range indexed.Results {
+			// loops over index: indexedRes contains all metrics of one interface
 			labels := map[string]string{}
 			for _, res := range indexedRes {
 				if res.AsLabel {
@@ -153,6 +154,7 @@ func (c *SnmpCollector) Push(pollRes PollResult) {
 			}
 
 			for _, res := range indexedRes {
+				// loops over oid i.e. each metric of a given interface
 				if res.AsLabel {
 					continue
 				}

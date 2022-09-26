@@ -40,7 +40,7 @@ var mockResults = [...]struct {
 }
 
 // mockPoll simulates an snmp poll request.
-func (sq *snmpQueue) mockPoll(ctx context.Context, req *SnmpRequest) {
+func (s *snmpQueue) mockPoll(ctx context.Context, req *SnmpRequest) {
 	req.Debug(1, "start mock polling")
 	ongoingMu.Lock()
 	ongoingReqs[req.UID] = true
@@ -56,7 +56,8 @@ func (sq *snmpQueue) mockPoll(ctx context.Context, req *SnmpRequest) {
 	case <-time.After(time.Duration(res.Duration) * time.Millisecond):
 		pollResults <- res
 		req.Debug(1, ">> done mock polling")
-		<-sq.workers
+		<-s.workers
+		atomic.AddInt64(&s.used, -1)
 	}
 }
 
