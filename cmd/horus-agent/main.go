@@ -51,7 +51,7 @@ var (
 	maxMemLoad     = getopt.IntLong("max-mem-load", 'm', 90, "Max memory usage allowed before rejecting new jobs", "percent")
 	mock           = getopt.BoolLong("mock", 0, "Run the agent in mock mode (no actual snmp query)")
 	statUpdFreq    = getopt.IntLong("stat-frequency", 's', 0, "Agent stats update frequency (disabled if 0)", "sec")
-	interPollDelay = getopt.IntLong("inter-poll-delay", 't', 100, "time to wait between successive poll start", "msec")
+	interPollDelay = getopt.IntLong("inter-poll-delay", 't', 5, "time to wait between successive poll start", "msec")
 	logDir         = getopt.StringLong("log", 0, "", "directory for log files, disabled if empty (all log goes to stderr)", "dir")
 
 	// prometheus conf
