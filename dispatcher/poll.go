@@ -18,7 +18,6 @@ import (
 	"context"
 	"net/http"
 	"sync"
-	"sync/atomic"
 
 	"github.com/kosctelecom/horus/log"
 	"github.com/kosctelecom/horus/model"
@@ -90,8 +89,7 @@ func SendPollingJobs(ctx context.Context) {
 					jobDistribMu.Lock()
 					jobDistrib[req.Device.ID] = agent.name
 					jobDistribMu.Unlock()
-					log.Debug2f("%s - atomic increasing accepted count", req.UID)
-					atomic.AddInt64(&accepted, 1)
+					accepted++
 					log.Debug2f("%s - request sent to agent #%d (load: %.4f)", req.UID, agent.ID, load)
 					return
 				case http.StatusTooManyRequests:
@@ -106,7 +104,7 @@ func SendPollingJobs(ctx context.Context) {
 			}
 			if statusCode != http.StatusAccepted {
 				log.Warningf("%s - polling job discarded (no worker found)", req.UID)
-				atomic.AddInt64(&discarded, 1)
+				discarded++
 				sqlExec(req.UID, "unlockDevStmt", unlockDevStmt, req.Device.ID)
 			}
 		}(ctx, req)

@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"math/rand"
-	"sync/atomic"
 	"time"
 
 	"github.com/kosctelecom/horus/log"
@@ -45,7 +44,7 @@ func (s *snmpQueue) mockPoll(ctx context.Context, req *SnmpRequest) {
 	ongoingMu.Lock()
 	ongoingReqs[req.UID] = true
 	ongoingMu.Unlock()
-	atomic.AddInt64(&waiting, -1)
+	waiting--
 	mockRes := mockResults[rand.Intn(len(mockResults))]
 	res := req.MakePollResult()
 	res.pollErr, res.Duration = mockRes.pollErr, mockRes.pollDur
@@ -57,7 +56,7 @@ func (s *snmpQueue) mockPoll(ctx context.Context, req *SnmpRequest) {
 		pollResults <- res
 		req.Debug(1, ">> done mock polling")
 		<-s.workers
-		atomic.AddInt64(&s.used, -1)
+		s.used--
 	}
 }
 

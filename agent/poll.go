@@ -17,7 +17,6 @@ package agent
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/kosctelecom/horus/log"
@@ -105,7 +104,7 @@ func AddSnmpRequest(req *SnmpRequest) bool {
 	case snmpq.workers <- struct{}{}:
 		log.Debug2f("got worker, adding snmp req %s, usage:%d/%d workers:%d", req.UID, snmpq.used, snmpq.size, len(snmpq.workers))
 		snmpq.requests <- req
-		atomic.AddInt64(&snmpq.used, 1)
+		snmpq.used++
 		return true
 	default:
 		log.Debug2f("snmp work queue full, usage:%d/%d workers:%d reqs:%d", snmpq.used, snmpq.size, len(snmpq.workers), len(snmpq.requests))
@@ -132,7 +131,7 @@ func (s *snmpQueue) dispatch(ctx context.Context) {
 			return
 		case req := <-s.requests:
 			req.Debug(2, "new request from queue")
-			atomic.AddInt64(&waiting, 1)
+			waiting++
 			sincePrevPoll := time.Since(prevPoll)
 			if sincePrevPoll < InterPollDelay {
 				// sleep if needed, to smooth the load
@@ -156,7 +155,7 @@ func (s *snmpQueue) poll(ctx context.Context, req *SnmpRequest) {
 	ongoingMu.Lock()
 	ongoingReqs[req.UID] = true
 	ongoingMu.Unlock()
-	atomic.AddInt64(&waiting, -1)
+	waiting--
 	if err := req.Dial(ctx); err != nil {
 		req.Errorf("unable to connect to snmp device: %v", err)
 		res := req.MakePollResult() // needed for report
@@ -170,7 +169,7 @@ func (s *snmpQueue) poll(ctx context.Context, req *SnmpRequest) {
 	delete(ongoingReqs, req.UID)
 	ongoingMu.Unlock()
 	<-s.workers
-	atomic.AddInt64(&s.used, -1)
+	s.used--
 	req.Debugf(1, "done polling, ongoing: %d, usage: %d/%d", len(ongoingReqs), s.used, s.size)
 }
 
