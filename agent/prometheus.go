@@ -96,6 +96,10 @@ var (
 		Name: "agent_snmp_scrape_duration_seconds",
 		Help: "snmp scrape duration.",
 	})
+	totalPollCount = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "agent_snmp_poll_count_total",
+		Help: "Total number of polled devices since startup.",
+	})
 )
 
 var (
@@ -119,6 +123,7 @@ func InitCollectors(maxResAge, sweepFreq int) {
 	prometheus.MustRegister(sysMem)
 	prometheus.MustRegister(snmpScrapes)
 	prometheus.MustRegister(snmpScrapeDuration)
+	prometheus.MustRegister(totalPollCount)
 	http.Handle("/metrics", promhttp.Handler())
 
 	if sc := NewCollector(maxResAge, sweepFreq, "/snmpmetrics"); sc != nil {

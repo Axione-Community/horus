@@ -63,6 +63,9 @@ var (
 
 	// pollResults is the channel where the poll results are pushed.
 	pollResults chan PollResult
+
+	// totalPolls is total number of completed poll since startup
+	totalPolls int64
 )
 
 // Init initializes the worker queue and starts the job dispatcher
@@ -170,6 +173,7 @@ func (s *snmpQueue) poll(ctx context.Context, req *SnmpRequest) {
 	ongoingMu.Unlock()
 	<-s.workers
 	s.used--
+	totalPolls++
 	req.Debugf(1, "done polling, ongoing: %d, usage: %d/%d", len(ongoingReqs), s.used, s.size)
 }
 
@@ -187,10 +191,11 @@ func updateStats() {
 		}
 		currSampleCount.Set(float64(snmpSampleCount))
 		ongoingPollCount.Set(float64(len(ongoingReqs)))
+		totalPollCount.Set(float64(totalPolls))
 		heapMem.Set(usedMem)
 		snmpScrapes.Set(float64(snmpCollector.scrapeCount))
 		snmpScrapeDuration.Set(float64(snmpCollector.scrapeDuration) / float64(time.Second))
-		log.Debugf("ongoing=%d prom_samples=%d scrape_count=%d scrape_dur=%v heap=%.0fMiB", len(ongoingReqs),
+		log.Debugf("ongoing=%d total_polled=%d prom_samples=%d scrape_count=%d scrape_dur=%v heap=%.0fMiB", len(ongoingReqs), totalPolls,
 			snmpSampleCount, snmpCollector.scrapeCount, snmpCollector.scrapeDuration, usedMem/1024/1024)
 	}
 }
