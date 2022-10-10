@@ -163,11 +163,11 @@ func processOutput(req model.PingRequest, output string) []PingMeasure {
 			metrics[ipAddr] = []float64{0, 0}
 		} else {
 			tokens := strings.Fields(line)
-			ipAddr := tokens[0]
 			if len(tokens) < 3 {
 				log.Errorf("processOutput: invalid output line `%s`", line)
 				continue
 			}
+			ipAddr := tokens[0]
 			for _, tok := range tokens[2:] {
 				if tok == "-" {
 					metrics[ipAddr] = append(metrics[ipAddr], 0)
