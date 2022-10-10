@@ -189,6 +189,10 @@ func (s *SnmpRequest) Close() {
 		}
 		cli.GoSNMP = nil
 	}
+	s.ScalarMeasures = nil
+	s.IndexedMeasures = nil
+	s.ReportURLs = nil
+	s.Device = nil
 }
 
 // Get fetches all the scalar measures results.
