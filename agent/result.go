@@ -156,7 +156,7 @@ type PollResult struct {
 var numberPat = regexp.MustCompile(`[-+]?\d*\.?\d+`)
 
 // MakePollResult builds a PollResult from an SnmpRequest.
-func (r SnmpRequest) MakePollResult() PollResult {
+func (r *SnmpRequest) MakePollResult() PollResult {
 	tags := make(map[string]string)
 	tags["id"] = strconv.Itoa(r.Device.ID)
 	tags["host"] = r.Device.Hostname
