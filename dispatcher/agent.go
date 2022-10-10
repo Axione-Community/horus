@@ -109,7 +109,7 @@ var (
 //     the load sorted list is returned.
 // - if the device has an agent restriction (allowed agent list), we remove all other agents from the final
 //   list before returning it. In this case, a device can only be polled by one of the affected agents.
-func AgentsForDevice(dev model.Device) []*Agent {
+func AgentsForDevice(dev *model.Device) []*Agent {
 	var selectedAgents []*Agent
 	currAgents := currentAgentsCopy()
 	for k, a := range currAgents {
@@ -147,7 +147,7 @@ func AgentsForDevice(dev model.Device) []*Agent {
 
 // filterAllowedAgents returns only allowed agents for this device from the agents list.
 // Returns initial list if allowed agents list is empty for this device (no restriction).
-func filterAllowedAgents(dev model.Device, agents []*Agent) []*Agent {
+func filterAllowedAgents(dev *model.Device, agents []*Agent) []*Agent {
 	if len(dev.AllowedAgentIDs) == 0 {
 		return agents
 	}

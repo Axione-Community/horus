@@ -58,39 +58,41 @@ var (
 // RequestFromDB returns the request with the given device id from db.
 func RequestFromDB(devID int) (model.SnmpRequest, error) {
 	var req model.SnmpRequest
-	err := db.Get(&req.Device, `SELECT active,
-                                       d.id,
-                                       hostname,
-                                       COALESCE(ip_address, '') AS ip_address,
-                                       p.category,
-                                       p.vendor,
-                                       p.model,
-                                       polling_frequency,
-                                       snmp_alternate_community,
-                                       snmp_community,
-                                       snmp_connection_count,
-                                       snmp_disable_bulk,
-                                       snmp_port,
-                                       snmp_retries,
-                                       snmp_timeout,
-                                       snmp_version,
-                                       snmp_max_repetitions,
-                                       snmpv3_auth_passwd,
-                                       snmpv3_auth_proto,
-                                       snmpv3_auth_user,
-                                       snmpv3_privacy_passwd,
-                                       snmpv3_privacy_proto,
-                                       snmpv3_security_level,
-                                       tags,
-                                       allowed_agent_ids
-                                  FROM devices d,
-                                       profiles p
-                                 WHERE d.profile_id = p.id
-                                   AND d.id = $1`, devID)
+	var device model.Device
+	err := db.Get(&device, `SELECT active,
+                                   d.id,
+                                   hostname,
+                                   COALESCE(ip_address, '') AS ip_address,
+                                   p.category,
+                                   p.vendor,
+                                   p.model,
+                                   polling_frequency,
+                                   snmp_alternate_community,
+                                   snmp_community,
+                                   snmp_connection_count,
+                                   snmp_disable_bulk,
+                                   snmp_port,
+                                   snmp_retries,
+                                   snmp_timeout,
+                                   snmp_version,
+                                   snmp_max_repetitions,
+                                   snmpv3_auth_passwd,
+                                   snmpv3_auth_proto,
+                                   snmpv3_auth_user,
+                                   snmpv3_privacy_passwd,
+                                   snmpv3_privacy_proto,
+                                   snmpv3_security_level,
+                                   tags,
+                                   allowed_agent_ids
+                              FROM devices d,
+                                   profiles p
+                             WHERE d.profile_id = p.id
+                               AND d.id = $1`, devID)
 	if err != nil {
 		return req, fmt.Errorf("request: %v", err)
 	}
 
+	req.Device = &device
 	if req.Device.SnmpParams.IPAddress == "" {
 		addrs, err := net.LookupHost(req.Device.Hostname)
 		if err != nil {

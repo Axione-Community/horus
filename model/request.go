@@ -42,7 +42,7 @@ type SnmpRequest struct {
 	ReportURLs []string `json:"report_urls"`
 
 	// Device is the network device to poll.
-	Device Device `json:"device"`
+	Device *Device `json:"device"`
 }
 
 // OngoingPolls is the result to the OngoingURI api request.
