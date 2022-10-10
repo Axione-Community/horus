@@ -60,17 +60,10 @@ func HandleSnmpRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	b, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Warningf("error reading body: %v", err)
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "%.4f", CurrentSNMPLoad())
-		return
-	}
-	r.Body.Close()
-
+	decoder := json.NewDecoder(r.Body)
+	defer r.Body.Close()
 	var req SnmpRequest
-	if err := json.Unmarshal(b, &req); err != nil {
+	if err := decoder.Decode(&req); err != nil {
 		log.Debugf("invalid json request: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "%.4f", CurrentSNMPLoad())
