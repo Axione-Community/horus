@@ -202,7 +202,7 @@ func (c *PromCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements prometheus.Collector
 func (c *PromCollector) Collect(ch chan<- prometheus.Metric) {
-	samples := make([]*PromSample, 0, len(c.Samples))
+	samples := make([]PromSample, 0, len(c.Samples))
 	start := time.Now()
 	c.Lock()
 	for _, s := range c.Samples {
@@ -211,7 +211,7 @@ func (c *PromCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 	c.Unlock()
 	log.Debug2f("%d current snmp samples copied for scrape", len(samples))
-	for _, sample := range samples {
+	for i, sample := range samples {
 		desc := prometheus.NewDesc(sample.Name, sample.Desc, nil, sample.Labels)
 		metr, err := prometheus.NewConstMetric(desc, prometheus.UntypedValue, sample.Value)
 		if err != nil {
@@ -219,6 +219,8 @@ func (c *PromCollector) Collect(ch chan<- prometheus.Metric) {
 			continue
 		}
 		ch <- prometheus.NewMetricWithTimestamp(sample.Stamp, metr)
+		sample.Labels = nil
+		samples[i] = PromSample{}
 	}
 	log.Debugf("scrape done in %dms (%d samples)", time.Since(start)/time.Millisecond, len(samples))
 	c.scrapeCount++
@@ -265,8 +267,8 @@ func coalesceInt(nums ...int) int {
 	return 0
 }
 
-func (s *PromSample) copyWithMergedLabels() *PromSample {
-	dup := &PromSample{
+func (s *PromSample) copyWithMergedLabels() PromSample {
+	dup := PromSample{
 		Name:  s.Name,
 		Desc:  s.Desc,
 		Value: s.Value,
