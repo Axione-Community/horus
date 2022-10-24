@@ -45,8 +45,10 @@ func (w *GoSNMPWrapper) GetWithCtx(ctx context.Context, oids []string) (result *
 	w.Context = ctx
 	snmpRes := make(chan snmpResult)
 	go func() {
-		pkt, err := w.Get(oids)
-		snmpRes <- snmpResult{pkt, err}
+		if w != nil {
+			pkt, err := w.Get(oids)
+			snmpRes <- snmpResult{pkt, err}
+		}
 	}()
 	select {
 	case <-ctx.Done():
@@ -64,8 +66,10 @@ func (w *GoSNMPWrapper) GetNextWithCtx(ctx context.Context, oids []string) (resu
 	w.Context = ctx
 	snmpRes := make(chan snmpResult)
 	go func() {
-		pkt, err := w.GetNext(oids)
-		snmpRes <- snmpResult{pkt, err}
+		if w != nil {
+			pkt, err := w.GetNext(oids)
+			snmpRes <- snmpResult{pkt, err}
+		}
 	}()
 	select {
 	case <-ctx.Done():
@@ -83,8 +87,10 @@ func (w *GoSNMPWrapper) GetBulkWithCtx(ctx context.Context, oids []string, nonRe
 	w.Context = ctx
 	snmpRes := make(chan snmpResult)
 	go func() {
-		pkt, err := w.GetBulk(oids, nonRepeaters, maxRepetitions)
-		snmpRes <- snmpResult{pkt, err}
+		if w != nil {
+			pkt, err := w.GetBulk(oids, nonRepeaters, maxRepetitions)
+			snmpRes <- snmpResult{pkt, err}
+		}
 	}()
 	select {
 	case <-ctx.Done():
@@ -102,7 +108,9 @@ func (w *GoSNMPWrapper) WalkWithCtx(ctx context.Context, rootOid string, walkFn 
 	w.Context = ctx
 	errCh := make(chan error)
 	go func() {
-		errCh <- w.Walk(rootOid, walkFn)
+		if w != nil {
+			errCh <- w.Walk(rootOid, walkFn)
+		}
 	}()
 	select {
 	case <-ctx.Done():
@@ -121,7 +129,9 @@ func (w *GoSNMPWrapper) BulkWalkWithCtx(ctx context.Context, rootOid string, wal
 	w.Context = ctx
 	errCh := make(chan error)
 	go func() {
-		errCh <- w.BulkWalk(rootOid, walkFn)
+		if w != nil {
+			errCh <- w.BulkWalk(rootOid, walkFn)
+		}
 	}()
 	select {
 	case <-ctx.Done():
