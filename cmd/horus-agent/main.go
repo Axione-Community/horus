@@ -91,6 +91,8 @@ func main() {
 
 	glog.WithConf(glog.Conf{Verbosity: *dbgLevel, LogDir: *logDir, PrintLocation: *dbgLevel > 0})
 
+	agent.Revision, agent.Branch, agent.Build = Revision, Branch, Build
+
 	if *showVersion {
 		fmt.Printf("Revision:%s Branch:%s Build:%s\n", Revision, Branch, Build)
 		return

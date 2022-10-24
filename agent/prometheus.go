@@ -68,6 +68,10 @@ type PromCollector struct {
 }
 
 var (
+	Revision string
+	Branch   string
+	Build    string
+
 	workersCount = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "agent_worker_count",
 		Help: "Number of max workers for this agent.",
@@ -100,6 +104,10 @@ var (
 		Name: "agent_snmp_poll_count_total",
 		Help: "Total number of polled devices since startup.",
 	})
+	snmpLoad = prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "agent_snmp_load_ratio",
+		Help: "Ratio of current number of all current snmp requests over the queue size",
+	}, CurrentSNMPLoad)
 )
 
 var (
@@ -124,6 +132,14 @@ func InitCollectors(maxResAge, sweepFreq int) {
 	prometheus.MustRegister(snmpScrapes)
 	prometheus.MustRegister(snmpScrapeDuration)
 	prometheus.MustRegister(totalPollCount)
+	prometheus.MustRegister(snmpLoad)
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name:        "agent_version",
+			Help:        "Agent current version",
+			ConstLabels: prometheus.Labels{"revision": Revision, "branch": Branch, "build": Build},
+		},
+		func() float64 { return 1 }))
 	http.Handle("/metrics", promhttp.Handler())
 
 	if sc := NewCollector(maxResAge, sweepFreq, "/snmpmetrics"); sc != nil {
