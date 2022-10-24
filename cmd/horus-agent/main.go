@@ -22,6 +22,8 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
+	"runtime/debug"
 	"strconv"
 	"syscall"
 	"time"
@@ -44,7 +46,7 @@ var (
 	// Branch is the git branch, set at compilation
 	Branch string
 
-	debug          = getopt.IntLong("debug", 'd', 0, "debug level")
+	dbgLevel       = getopt.IntLong("debug", 'd', 0, "debug level")
 	port           = getopt.Int16Long("port", 'p', 8080, "API webserver listen port", "port")
 	showVersion    = getopt.BoolLong("version", 'v', "Print version and build date")
 	snmpJobCount   = getopt.IntLong("snmp-jobs", 'j', 1, "Number of simultaneous snmp jobs", "count")
@@ -87,7 +89,7 @@ func main() {
 	getopt.SetParameters("")
 	getopt.Parse()
 
-	glog.WithConf(glog.Conf{Verbosity: *debug, LogDir: *logDir, PrintLocation: *debug > 0})
+	glog.WithConf(glog.Conf{Verbosity: *dbgLevel, LogDir: *logDir, PrintLocation: *dbgLevel > 0})
 
 	if *showVersion {
 		fmt.Printf("Revision:%s Branch:%s Build:%s\n", Revision, Branch, Build)
@@ -165,6 +167,7 @@ func main() {
 	http.HandleFunc(model.PingJobURI, agent.HandlePingRequest)
 	http.HandleFunc("/-/stop", handleStop)
 	http.HandleFunc("/-/debug", handleDebugLevel)
+	http.HandleFunc("/-/freeosmem", handleFreeOSMem)
 	logger := httplogger.CommonLogger(log.Writer{})
 	log.Infof("starting web server on port %d", *port)
 	glog.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), logger(http.DefaultServeMux)))
@@ -213,4 +216,10 @@ func handleDebugLevel(w http.ResponseWriter, r *http.Request) {
 	}
 	glog.SetLevel(int32(dbgLevel))
 	w.WriteHeader(http.StatusOK)
+}
+
+func handleFreeOSMem(w http.ResponseWriter, r *http.Request) {
+	log.Warning("forcing GC & OS memory release...")
+	runtime.GC()
+	debug.FreeOSMemory()
 }
