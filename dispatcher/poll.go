@@ -114,4 +114,7 @@ func SendPollingJobs(ctx context.Context) {
 	if discarded > 0 {
 		log.Warningf("not enough snmp workers available for %d jobs", discarded)
 	}
+	acceptedSNMPJobs.Set(float64(accepted))
+	discardedSNMPJobs.Set(float64(discarded))
+	totalSNMPJobs.Set(float64(len(jobs)))
 }

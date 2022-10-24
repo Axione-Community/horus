@@ -79,9 +79,14 @@ func PingHosts() ([]model.PingHost, error) {
 // SendPingRequests sends current ping requests to agents
 // with load-balancing and agent stickyness
 func SendPingRequests(ctx context.Context) {
-	var agents []Agent
-	var agentHosts = make(map[int][]model.PingHost)
-	var unaffectedHosts []model.PingHost
+	var (
+		agents          []Agent
+		agentHosts      = make(map[int][]model.PingHost)
+		unaffectedHosts []model.PingHost
+		total           int
+		accepted        int
+		discarded       int
+	)
 	for _, agent := range currentAgentsCopy() {
 		if agent.Alive {
 			agents = append(agents, *agent)
@@ -138,13 +143,19 @@ func SendPingRequests(ctx context.Context) {
 			if len(req.Hosts) == 0 {
 				continue
 			}
+			total += len(req.Hosts)
 			err := postPingRequest(ctx, req, agent)
 			if err != nil {
 				log.Errorf("%s - post ping request: %v, skipped", req.UID, err)
+				discarded += len(req.Hosts)
 				continue
 			}
+			accepted += len(req.Hosts)
 		}
 	}
+	totalPingHosts.Set(float64(total))
+	acceptedPingHosts.Set(float64(accepted))
+	discardedPingHosts.Set(float64(discarded))
 }
 
 // postPingRequest posts a ping job to an agent. Returns an error if the post fails or

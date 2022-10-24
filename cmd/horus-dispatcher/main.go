@@ -31,6 +31,7 @@ import (
 	"github.com/kosctelecom/horus/log"
 	"github.com/kosctelecom/horus/model"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/vma/getopt"
 	"github.com/vma/glog"
 	"github.com/vma/httplogger"
@@ -78,6 +79,8 @@ func main() {
 
 	glog.WithConf(glog.Conf{Verbosity: *debug, LogDir: *logDir, PrintLocation: *debug > 0})
 
+	dispatcher.Revision, dispatcher.Branch, dispatcher.Build = Revision, Branch, Build
+
 	if *showVersion {
 		fmt.Printf("Revision:%s Branch:%s Build:%s\n", Revision, Branch, Build)
 		return
@@ -112,6 +115,8 @@ func main() {
 		}
 	}()
 
+	dispatcher.RegisterPromMetrics()
+
 	http.HandleFunc(model.ReportURI, dispatcher.HandleReport)
 	http.HandleFunc(dispatcher.DeviceListURI, dispatcher.HandleDeviceList)
 	http.HandleFunc(dispatcher.DeviceCreateURI, dispatcher.HandleDeviceCreate)
@@ -120,6 +125,7 @@ func main() {
 	http.HandleFunc(dispatcher.DeviceDeleteURI, dispatcher.HandleDeviceDelete)
 	http.HandleFunc("/r/check", handleCheck)
 	http.HandleFunc("/-/debug", handleDebugLevel)
+	http.Handle("/metrics", promhttp.Handler())
 
 	var wg sync.WaitGroup
 
