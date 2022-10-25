@@ -257,7 +257,8 @@ func (s *PromSample) computeKey() uint64 {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	sid := s.Name
+	h := fnv.New64a()
+	h.Write([]byte(s.Name))
 	for _, k := range keys {
 		v, ok := s.Tags[k]
 		if !ok {
@@ -266,10 +267,9 @@ func (s *PromSample) computeKey() uint64 {
 		if !ok {
 			v, ok = s.MetricLabels[k]
 		}
-		sid += k + v
+		h.Write([]byte(k))
+		h.Write([]byte(v))
 	}
-	h := fnv.New64a()
-	h.Write([]byte(sid))
 	return h.Sum64()
 }
 
