@@ -30,7 +30,7 @@ func TestRequest(t *testing.T) {
 			`{
 				"uid": "000",
 				"agent_id": 1,
-				"report_url": "localhost/report",
+				"report_urls": ["localhost/report"],
 				"device": {
 					"id": 1500,
 					"hostname": "dsl1500.kosc.net",
@@ -47,10 +47,10 @@ func TestRequest(t *testing.T) {
 				}
 			}`,
 			SnmpRequest{
-				UID:       "000",
-				AgentID:   1,
-				ReportURL: "http://localhost/report",
-				Device: Device{
+				UID:        "000",
+				AgentID:    1,
+				ReportURLs: []string{"http://localhost/report"},
+				Device: &Device{
 					ID:               1500,
 					Hostname:         "dsl1500.kosc.net",
 					PollingFrequency: 300,
@@ -76,16 +76,19 @@ func TestRequest(t *testing.T) {
 		},
 		{
 			`{
-				"uid": "001"
+				"uid": "001",
+				"device": {}
 			}`,
-			SnmpRequest{},
+			SnmpRequest{
+				Device: &Device{},
+			},
 			false, // empty device
 		},
 		{
 			`{
 				"uid": "002",
 				"agent_id": 1,
-				"report_url": "localhost/report",
+				"report_urls": ["localhost/report"],
 				"device": {
 					"id": 1,
 					"hostname": "10.2.0.9",
@@ -104,10 +107,10 @@ func TestRequest(t *testing.T) {
 				}
 			}`,
 			SnmpRequest{
-				UID:       "002",
-				AgentID:   1,
-				ReportURL: "http://localhost/report",
-				Device: Device{
+				UID:        "002",
+				AgentID:    1,
+				ReportURLs: []string{"http://localhost/report"},
+				Device: &Device{
 					ID:               1,
 					Hostname:         "10.2.0.9",
 					PollingFrequency: 300,
@@ -162,7 +165,7 @@ func TestRequest(t *testing.T) {
 			}`,
 			SnmpRequest{
 				UID: "003",
-				Device: Device{
+				Device: &Device{
 					ID:               1492,
 					Hostname:         "1492.kosc.net",
 					PollingFrequency: 300,
@@ -211,8 +214,8 @@ func TestRequest(t *testing.T) {
 							},
 						},
 						IndexMetricID: NullInt64{8, true},
+						IndexMetric:   "ifIndex",
 						IndexPos:      0,
-						FilterPos:     -1,
 					},
 				},
 			},
