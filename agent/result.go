@@ -25,11 +25,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gosnmp/gosnmp"
 	"horus/log"
 	"horus/model"
 
 	"github.com/mitchellh/copystructure"
+	"github.com/sipsolutions/gosnmp"
 	"github.com/vma/glog"
 )
 

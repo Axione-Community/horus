@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/gosnmp/gosnmp"
+	"github.com/sipsolutions/gosnmp"
 )
 
 const (

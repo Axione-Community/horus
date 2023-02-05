@@ -1,15 +1,15 @@
-module github.com/kosctelecom/horus
+module horus
 
 go 1.18
 
 require (
-	github.com/gosnmp/gosnmp v1.35.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.7
 	github.com/mitchellh/copystructure v1.2.0
 	github.com/nats-io/nats.go v1.17.0
 	github.com/optiopay/kafka/v2 v2.1.1
 	github.com/prometheus/client_golang v1.13.0
+	github.com/sipsolutions/gosnmp v1.36.0
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	github.com/vma/getopt v1.0.0
 	github.com/vma/glog v1.5.1

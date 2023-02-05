@@ -22,9 +22,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gosnmp/gosnmp"
 	"horus/log"
 	"horus/model"
+
+	"github.com/sipsolutions/gosnmp"
 )
 
 // resultCache is a cache for walk results to avoid rewalking the same oids (with same community).
@@ -42,7 +43,7 @@ type SnmpRequest struct {
 	rc *resultCache
 
 	// snmpClis is an array of gosnmp connections
-	snmpClis []*GoSNMPWrapper
+	snmpClis []*gosnmp.GoSNMP
 
 	// logger is the internal gosnmp compatible glog Logger.
 	log.Logger
@@ -124,7 +125,7 @@ func (s *SnmpRequest) UnmarshalJSON(data []byte) error {
 
 	s.rc = &resultCache{cache: make(map[string]TabularResults)}
 	snmpParams := s.Device.SnmpParams
-	s.snmpClis = make([]*GoSNMPWrapper, snmpParams.ConnectionCount)
+	s.snmpClis = make([]*gosnmp.GoSNMP, snmpParams.ConnectionCount)
 	for i := 0; i < snmpParams.ConnectionCount; i++ {
 		cli := &gosnmp.GoSNMP{
 			Target:         snmpParams.IPAddress,
@@ -141,7 +142,7 @@ func (s *SnmpRequest) UnmarshalJSON(data []byte) error {
 			cli.MsgFlags = msgFlag
 			cli.SecurityParameters = &secParams
 		}
-		s.snmpClis[i] = &GoSNMPWrapper{cli}
+		s.snmpClis[i] = cli
 	}
 
 	var allMetrics []model.Metric
@@ -164,7 +165,7 @@ func (s *SnmpRequest) Dial(ctx context.Context) error {
 	for i, cli := range s.snmpClis {
 		s.Debugf(2, "dial: initiating conn #%d", i)
 		wg.Add(1)
-		go func(i int, cli *GoSNMPWrapper) {
+		go func(i int, cli *gosnmp.GoSNMP) {
 			defer wg.Done()
 			if err := cli.DialWithCtx(ctx); err != nil {
 				s.Warningf("dial: snmp cli #%d: %v", i, err)
@@ -184,10 +185,7 @@ func (s *SnmpRequest) Dial(ctx context.Context) error {
 func (s *SnmpRequest) Close() {
 	s.Debugf(2, "closing all snmp cons...")
 	for _, cli := range s.snmpClis {
-		if cli.Conn != nil {
-			cli.Conn.Close()
-		}
-		cli.GoSNMP = nil
+		cli.Close()
 	}
 	s.ScalarMeasures = nil
 	s.IndexedMeasures = nil
@@ -235,7 +233,7 @@ func (s *SnmpRequest) getMeasure(ctx context.Context, meas model.ScalarMeasure) 
 
 	snmpResults := make(chan snmpgetResult)
 	for i, cli := range s.snmpClis {
-		go func(i int, cli *GoSNMPWrapper) {
+		go func(i int, cli *gosnmp.GoSNMP) {
 			for metric := range metrics {
 				if meas.UseAlternateCommunity && s.Device.AlternateCommunity != "" {
 					cli.Community = s.Device.AlternateCommunity
