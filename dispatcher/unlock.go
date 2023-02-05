@@ -22,8 +22,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kosctelecom/horus/log"
-	"github.com/kosctelecom/horus/model"
+	"horus/log"
+	"horus/model"
+
 	"github.com/lib/pq"
 )
 

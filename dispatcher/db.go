@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"time"
 
+	"horus/log"
+
 	"github.com/jmoiron/sqlx"
-	"github.com/kosctelecom/horus/log"
 )
 
 var (

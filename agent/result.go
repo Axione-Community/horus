@@ -26,8 +26,9 @@ import (
 	"time"
 
 	"github.com/gosnmp/gosnmp"
-	"github.com/kosctelecom/horus/log"
-	"github.com/kosctelecom/horus/model"
+	"horus/log"
+	"horus/model"
+
 	"github.com/mitchellh/copystructure"
 	"github.com/vma/glog"
 )

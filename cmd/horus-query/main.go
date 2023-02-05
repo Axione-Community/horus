@@ -25,9 +25,10 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/kosctelecom/horus/agent"
-	"github.com/kosctelecom/horus/dispatcher"
-	"github.com/kosctelecom/horus/model"
+	"horus/agent"
+	"horus/dispatcher"
+	"horus/model"
+
 	_ "github.com/lib/pq"
 	"github.com/vma/getopt"
 	"github.com/vma/glog"

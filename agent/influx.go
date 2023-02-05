@@ -20,7 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kosctelecom/horus/log"
+	"horus/log"
+
 	"github.com/vma/glog"
 	"github.com/vma/influxclient"
 )

@@ -21,7 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kosctelecom/horus/log"
+	"horus/log"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

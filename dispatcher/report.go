@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kosctelecom/horus/log"
+	"horus/log"
 )
 
 // HandleReport saves the polling report to db and unlocks the device.

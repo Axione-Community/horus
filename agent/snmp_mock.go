@@ -20,7 +20,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/kosctelecom/horus/log"
+	"horus/log"
+
 	"github.com/vma/glog"
 )
 

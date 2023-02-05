@@ -6,7 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kosctelecom/horus/log"
+	"horus/log"
+
 	"github.com/nats-io/nats.go"
 )
 

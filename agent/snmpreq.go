@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/gosnmp/gosnmp"
-	"github.com/kosctelecom/horus/log"
-	"github.com/kosctelecom/horus/model"
+	"horus/log"
+	"horus/model"
 )
 
 // resultCache is a cache for walk results to avoid rewalking the same oids (with same community).

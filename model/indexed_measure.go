@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/kosctelecom/horus/log"
+	"horus/log"
 )
 
 // IndexedMeasure is a group of tabular metrics indexed by the first one.

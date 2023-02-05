@@ -28,9 +28,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kosctelecom/horus/agent"
-	"github.com/kosctelecom/horus/log"
-	"github.com/kosctelecom/horus/model"
+	"horus/agent"
+	"horus/log"
+	"horus/model"
+
 	"github.com/vma/getopt"
 	"github.com/vma/glog"
 	"github.com/vma/httplogger"

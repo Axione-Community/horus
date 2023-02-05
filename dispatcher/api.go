@@ -23,8 +23,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/kosctelecom/horus/log"
-	"github.com/kosctelecom/horus/model"
+	"horus/log"
+	"horus/model"
 )
 
 const (

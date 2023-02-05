@@ -17,7 +17,7 @@ package agent
 import (
 	"fmt"
 
-	"github.com/kosctelecom/horus/log"
+	"horus/log"
 )
 
 // SnmpCollector is a prometheus collector for snmp datas.

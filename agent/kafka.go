@@ -22,7 +22,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kosctelecom/horus/log"
+	"horus/log"
+
 	"github.com/optiopay/kafka/v2"
 	"github.com/optiopay/kafka/v2/proto"
 	"github.com/vma/glog"

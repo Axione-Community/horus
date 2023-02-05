@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kosctelecom/horus/log"
-	"github.com/kosctelecom/horus/model"
+	"horus/log"
+	"horus/model"
 )
 
 // loadHistory is the agent's previous loads, used for load avg calculation.

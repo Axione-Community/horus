@@ -23,7 +23,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kosctelecom/horus/log"
+	"horus/log"
 )
 
 var (

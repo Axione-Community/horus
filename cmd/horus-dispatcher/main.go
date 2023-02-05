@@ -27,9 +27,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kosctelecom/horus/dispatcher"
-	"github.com/kosctelecom/horus/log"
-	"github.com/kosctelecom/horus/model"
+	"horus/dispatcher"
+	"horus/log"
+	"horus/model"
+
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/vma/getopt"

@@ -19,8 +19,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/kosctelecom/horus/log"
-	"github.com/kosctelecom/horus/model"
+	"horus/log"
+	"horus/model"
 )
 
 // SendPollingJobs retrieves all available snmp polling jobs and sends each of them sequentially
