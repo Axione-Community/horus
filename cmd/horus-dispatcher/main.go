@@ -58,8 +58,8 @@ var (
 	dbSnmpQueryFreq = getopt.IntLong("db-snmp-freq", 'q', 30, "db query frequency for available polling jobs (0 to disable snmp)", "seconds")
 	dbPingQueryFreq = getopt.IntLong("db-ping-freq", 'g', 10, "db query frequency for available ping jobs (0 to disable ping)", "seconds")
 	pingBatchCount  = getopt.IntLong("ping-batch-count", 0, 100, "number of hosts per fping process")
-	dbPollErrRP     = getopt.IntLong("error-flush-freq", 'r', 4, "how long to keep poll errors in reports table (0 is forever)", "hours")
-	dbFlusherFreq   = getopt.IntLong("report-flush-freq", 0, 2, "db reports table flush frequency (all entries with report_received_at=null older than this period are deleted)", "hours")
+	dbPollErrRP     = getopt.IntLong("error-flush-freq", 'r', 4, "how long to keep poll errors in reports table (0 is forever) *DEPRECATED*", "hours")
+	dbFlusherFreq   = getopt.IntLong("report-flush-freq", 0, 2, "db reports table flush frequency (all entries with report_received_at=null older than this period are deleted) *DEPRECATED*", "hours")
 	logDir          = getopt.StringLong("log", 0, "", "directory for log files. If empty, all log goes to stderr", "dir")
 	snmpLoadAvgWin  = getopt.IntLong("load-avg-window", 'w', 30, "SNMP load avg calculation window", "sec")
 	lockID          = getopt.IntLong("lock-id", 'l', 0, "pg advisory lock id to ensure single running process (0 to disable)")
@@ -230,17 +230,6 @@ func main() {
 			defer unlockTick.Stop()
 			for range unlockTick.C {
 				dispatcher.UnlockDevices()
-			}
-		}()
-	}
-
-	if *dbPollErrRP > 0 {
-		log.Debug("starting reports flusher goroutine")
-		go func() {
-			flushTick := time.NewTicker(time.Duration(*dbFlusherFreq) * time.Hour)
-			defer flushTick.Stop()
-			for range flushTick.C {
-				dispatcher.FlushReports(*dbPollErrRP, *dbFlusherFreq)
 			}
 		}()
 	}

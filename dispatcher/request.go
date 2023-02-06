@@ -357,23 +357,3 @@ func getLocalIP() string {
 	log.Debugf("local ip: %s", localIP)
 	return localIP
 }
-
-// FlushReports removes old report entries.
-func FlushReports(maxErrHours, maxEmptyHours int) {
-	log.Debugf("flushing error reports older than %d hours", maxErrHours)
-	rs, err := db.Exec(`DELETE FROM reports WHERE requested_at <= $1`, time.Now().Add(-time.Hour*time.Duration(maxErrHours)))
-	if err != nil {
-		log.Errorf("flush error reports: %v", err)
-		return
-	}
-	count, _ := rs.RowsAffected()
-	log.Debugf("%d error reports flushed", count)
-	log.Debugf("flushing unreceived reports older than %d hours", maxEmptyHours)
-	rs, err = db.Exec(`DELETE FROM reports WHERE requested_at <= $1 AND report_received_at IS NULL`, time.Now().Add(-time.Hour*time.Duration(maxEmptyHours)))
-	if err != nil {
-		log.Errorf("flush empty reports: %v", err)
-		return
-	}
-	count, _ = rs.RowsAffected()
-	log.Debugf("%d empty reports flushed", count)
-}

@@ -75,8 +75,7 @@ func SendPollingJobs(ctx context.Context) {
 				}
 				switch code {
 				case http.StatusAccepted:
-					log.Debug2f("%s - inserting req entry", req.UID)
-					sqlExec(req.UID, "insertReportStmt", insertReportStmt, req.UID, req.Device.ID, agent.ID, status)
+					log.Debug2f("report accepted: uid=%s devID=%d agentID=%d status=%s", req.UID, req.Device.ID, agent.ID, status)
 					log.Debug2f("%s - updating dev last poll time", req.UID)
 					updateLastPolledAt(req)
 					log.Debug2f("%s - lock-updating agent load", req.UID)

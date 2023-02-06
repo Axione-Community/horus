@@ -90,11 +90,11 @@ Options
 
 -r, --error-flush-freq=hours
 
-:   Specifies the number of hours during which to keep poll errors in reports table (successful reports are not kept). Defaults to 4 hours; Flushing is disabled when set to 0.
+:   Specifies the number of hours during which to keep poll errors in reports table (successful reports are not kept). Defaults to 4 hours; Flushing is disabled when set to 0. **DEPRECATED**
 
     --report-flush-freq=hours
 
-:   Specifies the db reports table flush frequency; all entries with null report\_received\_at older than this period are deleted. Defaults to 3 hours.
+:   Specifies the db reports table flush frequency; all entries with null report\_received\_at older than this period are deleted. Defaults to 3 hours. **DEPRECATED**
 
 -u, --device-unlock-freq
 

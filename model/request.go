@@ -48,7 +48,10 @@ type SnmpRequest struct {
 // OngoingPolls is the result to the OngoingURI api request.
 type OngoingPolls struct {
 	// Requests is the current polling requests IDs.
-	Requests []string `json:"ongoing"`
+	Requests []string `json:"requests"`
+
+	// Devices is the list currently polled device IDs.
+	Devices []int `json:"devices"`
 
 	// Load is the current load of the agent.
 	Load float64 `json:"load"`

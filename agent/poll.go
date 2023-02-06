@@ -52,8 +52,8 @@ var (
 	// StopCtx is a context used to stop the agent gracefully.
 	StopCtx context.Context
 
-	// ongoingReqs is a map with all active poll requests.
-	ongoingReqs = make(map[string]bool)
+	// ongoingReqs is a map with all active poll requests with uid as key and device id as value
+	ongoingReqs = make(map[string]int)
 	ongoingMu   sync.RWMutex
 
 	// waiting is the count of snmp requests waiting to be sent
@@ -157,7 +157,7 @@ func (s *snmpQueue) dispatch(ctx context.Context) {
 func (s *snmpQueue) poll(ctx context.Context, req *SnmpRequest) {
 	req.Debugf(1, "start polling, ongoing: %d, usage: %d/%d", len(ongoingReqs), s.used, s.size)
 	ongoingMu.Lock()
-	ongoingReqs[req.UID] = true
+	ongoingReqs[req.UID] = req.Device.ID
 	ongoingMu.Unlock()
 	waiting--
 	if err := req.Dial(ctx); err != nil {

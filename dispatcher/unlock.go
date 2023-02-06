@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"time"
 
 	"horus/log"
@@ -35,23 +34,22 @@ import (
 func UnlockDevices() {
 	agents := currentAgentsCopy()
 
-	var currentReqs []string
+	var currentDevs []int
 	for _, agent := range agents {
 		log.Debug2f("unlock dev: get ongoing from agent #%d (%s:%d)", agent.ID, agent.Host, agent.Port)
 		client := &http.Client{Timeout: time.Duration(HTTPTimeout) * time.Second}
 		resp, err := client.Get(fmt.Sprintf("http://%s:%d%s", agent.Host, agent.Port, model.OngoingURI))
 		if err != nil {
 			log.Debug2f("agent #%d: get ongoing: %v", agent.ID, err)
-			sqlExec("agent #"+strconv.Itoa(agent.ID), "unlockFromAgent", unlockFromAgentStmt, agent.ID)
 			continue
 		}
-		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
 			log.Warningf("agent #%d: get ongoing: %s", agent.ID, resp.Status)
-			sqlExec("agent #"+strconv.Itoa(agent.ID), "unlockFromAgent", unlockFromAgentStmt, agent.ID)
+			resp.Body.Close()
 			continue
 		}
 		b, err := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
 		if err != nil {
 			log.Errorf("agent #%d: get ongoing: read body: %v", agent.ID, err)
 			continue
@@ -61,9 +59,9 @@ func UnlockDevices() {
 			log.Errorf("agent #%d: get ongoing: json unmarshal: %v", agent.ID, err)
 			continue
 		}
-		currentReqs = append(currentReqs, ongoing.Requests...)
-		log.Debugf("agent #%d: %d running jobs", agent.ID, len(ongoing.Requests))
+		currentDevs = append(currentDevs, ongoing.Devices...)
+		log.Debugf("agent #%d: %d running jobs", agent.ID, len(ongoing.Devices))
 	}
-	log.Debugf("unlocking %d devices without ongoing poll", len(currentReqs))
-	sqlExec("", "unlockFromOngoing", unlockFromOngoingStmt, pq.Array(currentReqs))
+	log.Debugf("unlocking %d devices without ongoing poll", len(currentDevs))
+	sqlExec("", "unlockFromOngoing", unlockFromOngoingStmt, pq.Array(currentDevs))
 }

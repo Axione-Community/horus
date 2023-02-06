@@ -33,12 +33,9 @@ var (
 	unlockAllDevStmt         *sql.Stmt
 	unlockDevFromReportStmt  *sql.Stmt
 	unlockFromOngoingStmt    *sql.Stmt
-	unlockFromAgentStmt      *sql.Stmt
 	setDevLastPolledAt       *sql.Stmt
 	setDevLastPingedAt       *sql.Stmt
 	insertMetricLastPolledAt *sql.Stmt
-	insertReportStmt         *sql.Stmt
-	updReportStmt            *sql.Stmt
 	checkAgentStmt           *sql.Stmt
 )
 
@@ -104,25 +101,14 @@ func PrepareQueries() error {
 	}
 	unlockDevFromReportStmt, err = db.Prepare(`UPDATE devices
                                                   SET is_polling = false
-                                                WHERE id = (SELECT device_id
-                                                              FROM reports
-                                                             WHERE uuid = $1)`)
-	unlockFromAgentStmt, err = db.Prepare(`UPDATE devices
-                                              SET is_polling = false
-                                            WHERE id IN (SELECT device_id
-                                                           FROM reports
-                                                          WHERE agent_id = $1
-                                                            AND report_received_at IS NULL
-                                                            AND requested_at >= NOW() - INTERVAL '15 minutes')`)
+                                                WHERE id = $1`)
 	if err != nil {
-		return fmt.Errorf("prepare unlockDevFromAgentStmt: %v", err)
+		return fmt.Errorf("prepare unlockDevFromReportStmt: %v", err)
 	}
 	unlockFromOngoingStmt, err = db.Prepare(`UPDATE devices
                                                 SET is_polling = false
                                               WHERE last_polled_at < NOW() - (polling_frequency::TEXT || ' seconds')::INTERVAL
-                                                AND id NOT IN (SELECT device_id
-                                                                 FROM reports
-                                                                WHERE uuid = ANY($1))`)
+                                                AND id NOT IN ANY($1)`)
 	if err != nil {
 		return fmt.Errorf("prepare unlockFromOngoingStmt: %v", err)
 	}
@@ -146,20 +132,6 @@ func PrepareQueries() error {
                                                         SET last_polled_at = NOW()`)
 	if err != nil {
 		return fmt.Errorf("prepare insertMetricLastPolledAt: %v", err)
-	}
-	insertReportStmt, err = db.Prepare(`INSERT INTO reports
-                                                    (uuid, device_id, agent_id, post_status, requested_at)
-                                             VALUES ($1, $2, $3, $4, NOW())`)
-	if err != nil {
-		return fmt.Errorf("prepare insertReportStmt: %v", err)
-	}
-	updReportStmt, err = db.Prepare(`UPDATE reports
-                                        SET report_received_at = NOW(),
-                                            poll_duration_ms = $2,
-                                            poll_error = $3
-                                      WHERE uuid = $1`)
-	if err != nil {
-		return fmt.Errorf("prepare updReportStmt: %v", err)
 	}
 	checkAgentStmt, err = db.Prepare(`UPDATE agents
                                          SET last_checked_at = NOW(),

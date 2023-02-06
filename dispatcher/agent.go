@@ -181,8 +181,6 @@ func CheckAgents() error {
 		log.Debugf("%s: alive=%v load=%.2f", agent, isAlive, load)
 		sqlExec("agent #"+strconv.Itoa(agent.ID), "checkAgentStmt", checkAgentStmt, agent.ID, isAlive, agent.loadAvg)
 		if !isAlive {
-			// unlock all devices locked on a failed agent
-			sqlExec("agent #"+strconv.Itoa(agent.ID), "unlockFromAgent", unlockFromAgentStmt, agent.ID)
 			deadAgents[agent.name] = agent
 		}
 	}

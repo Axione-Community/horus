@@ -43,7 +43,7 @@ var mockResults = [...]struct {
 func (s *snmpQueue) mockPoll(ctx context.Context, req *SnmpRequest) {
 	req.Debug(1, "start mock polling")
 	ongoingMu.Lock()
-	ongoingReqs[req.UID] = true
+	ongoingReqs[req.UID] = 1
 	ongoingMu.Unlock()
 	waiting--
 	mockRes := mockResults[rand.Intn(len(mockResults))]

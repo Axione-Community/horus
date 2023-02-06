@@ -121,6 +121,9 @@ type PollResult struct {
 	// RequestID is the polling job id
 	RequestID string `json:"request_id"`
 
+	// DeviceID is the polled device's ID
+	DeviceID int `json:"device_id"`
+
 	// AgentID is the poller agent id
 	AgentID int `json:"agent_id"`
 
@@ -176,6 +179,7 @@ func (r *SnmpRequest) MakePollResult() PollResult {
 	}
 	return PollResult{
 		RequestID:  r.UID,
+		DeviceID:   r.Device.ID,
 		AgentID:    r.AgentID,
 		IPAddr:     r.Device.IPAddress,
 		PollStart:  time.Now(),
@@ -481,8 +485,8 @@ func handlePollResults() {
 // - poll_error: the polling error if any
 // - current_load: current agent load (current_jobs/total_capacity)
 func (p *PollResult) sendReport() {
-	log.Debugf("report: id=%s agent_id=%d poll_err=%q poll_dur=%dms metric_count=%d",
-		p.RequestID, p.AgentID, p.PollErr, p.Duration, p.metricCount)
+	log.Debugf("report: id=%s device_id=%d agent_id=%d poll_err=%q poll_dur=%dms metric_count=%d",
+		p.RequestID, p.DeviceID, p.AgentID, p.PollErr, p.Duration, p.metricCount)
 	if len(p.reportURLs) == 0 {
 		glog.Warningf("no report urls for req %s", p.RequestID)
 		return
@@ -502,6 +506,7 @@ outerLoop:
 			}
 			q := req.URL.Query()
 			q.Add("request_id", p.RequestID)
+			q.Add("device_id", strconv.Itoa(p.DeviceID))
 			q.Add("agent_id", strconv.Itoa(p.AgentID))
 			q.Add("poll_duration_ms", strconv.FormatInt(p.Duration, 10))
 			q.Add("poll_error", p.PollErr)

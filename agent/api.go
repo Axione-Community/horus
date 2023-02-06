@@ -97,8 +97,9 @@ func HandleOngoing(w http.ResponseWriter, r *http.Request) {
 	var ongoing model.OngoingPolls
 
 	ongoingMu.RLock()
-	for id := range ongoingReqs {
-		ongoing.Requests = append(ongoing.Requests, id)
+	for uid, devID := range ongoingReqs {
+		ongoing.Requests = append(ongoing.Requests, uid)
+		ongoing.Devices = append(ongoing.Devices, devID)
 	}
 	ongoingMu.RUnlock()
 	ongoing.Load = CurrentSNMPLoad()
