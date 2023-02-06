@@ -52,8 +52,8 @@ func PingHosts() ([]model.PingHost, error) {
                                 FROM devices d,
                                      profiles p
                                WHERE d.active = TRUE
-                                 AND (d.last_pinged_at IS NULL OR EXTRACT(EPOCH FROM CURRENT_TIMESTAMP - d.last_pinged_at) >= d.ping_frequency)
                                  AND d.ping_frequency > 0
+                                 AND (d.last_pinged_at IS NULL OR EXTRACT(EPOCH FROM CURRENT_TIMESTAMP - d.last_pinged_at) > d.ping_frequency - 1)
                                  AND d.profile_id = p.id
                             ORDER BY d.last_pinged_at`)
 	if err == sql.ErrNoRows {

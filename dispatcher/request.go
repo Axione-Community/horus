@@ -164,7 +164,7 @@ func RequestFromDB(devID int) (model.SnmpRequest, error) {
                                            WHERE m.active = TRUE
                                              AND m.id = mm.metric_id
                                              AND mm.measure_id = $2
-                                             AND (t.last_polled_at IS NULL OR EXTRACT(EPOCH FROM CURRENT_TIMESTAMP - t.last_polled_at) >= m.polling_frequency)
+                                             AND (t.last_polled_at IS NULL OR EXTRACT(EPOCH FROM CURRENT_TIMESTAMP - t.last_polled_at) >= m.polling_frequency - 1)
                                         ORDER BY m.id`, devID, scalar.ID)
 		if err != nil {
 			return req, fmt.Errorf("select scalar metrics: %v", err)
@@ -191,7 +191,7 @@ func RequestFromDB(devID int) (model.SnmpRequest, error) {
                                             WHERE m.active = TRUE
                                               AND m.id = mm.metric_id
                                               AND mm.measure_id = $2
-                                              AND (t.last_polled_at IS NULL OR EXTRACT(EPOCH FROM CURRENT_TIMESTAMP - t.last_polled_at) >= m.polling_frequency)
+                                              AND (t.last_polled_at IS NULL OR EXTRACT(EPOCH FROM CURRENT_TIMESTAMP - t.last_polled_at) > m.polling_frequency - 1)
                                          ORDER BY m.id`, devID, indexed.ID)
 		if err != nil {
 			return req, fmt.Errorf("select indexed metrics: %v", err)
