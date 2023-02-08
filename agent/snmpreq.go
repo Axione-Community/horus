@@ -302,7 +302,7 @@ func (s *SnmpRequest) walkMetric(ctx context.Context, grouped []model.Metric, co
 
 	tabResult := make(TabularResults)
 	pduWalker := func(pdu gosnmp.SnmpPDU) error {
-		if len(pdu.Name) < len(oid) {
+		if len(pdu.Name) <= len(oid)+1 {
 			return fmt.Errorf("child oid (%s) smaller than base oid (%s)", pdu.Name, oid)
 		}
 		if pdu.Value != nil {
