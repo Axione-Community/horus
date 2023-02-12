@@ -28,10 +28,9 @@ import (
 )
 
 // UnlockDevices retrieves all ongoing requests from all active agents
-// and unlocks all devices without any polling job and whose last job
-// is past its global polling frequency. Is called periodically on a
-// separate goroutine.
-func UnlockDevices() {
+// and unlocks all devices without any polling job and whose last job is
+// over maxLockTime seconds. Is called periodically on a separate goroutine.
+func UnlockDevices(maxLockTime int) {
 	agents := currentAgentsCopy()
 
 	var currentDevs []int
@@ -62,6 +61,10 @@ func UnlockDevices() {
 		currentDevs = append(currentDevs, ongoing.Devices...)
 		log.Debugf("agent #%d: %d running jobs", agent.ID, len(ongoing.Devices))
 	}
-	log.Debugf("unlocking %d devices without ongoing poll", len(currentDevs))
-	sqlExec("", "unlockFromOngoing", unlockFromOngoingStmt, pq.Array(currentDevs))
+	if len(currentDevs) > 0 {
+		log.Debugf("unlocking devices without ongoing poll")
+		sqlExec("", "unlockFromOngoing", unlockFromOngoingStmt, pq.Array(currentDevs))
+	}
+	log.Debugf("unlocking all devices with last poll time older than %ds", maxLockTime)
+	sqlExec("", "unlockAllDev", unlockAllDevStmt, maxLockTime)
 }

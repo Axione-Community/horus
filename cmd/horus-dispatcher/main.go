@@ -53,19 +53,21 @@ var (
 	localIP         = getopt.StringLong("ip", 'i', dispatcher.LocalIP, "API & report web server local listen IP, must be non-zero", "address")
 	port            = getopt.IntLong("port", 'p', dispatcher.Port, "API & report web server listen port", "port")
 	dsn             = getopt.StringLong("dsn", 'c', "", "postgres db DSN", "url")
-	unlockFreq      = getopt.IntLong("device-unlock-freq", 'u', 600, "device unlocker frequency (resets the db is_polling flag)", "seconds")
+	devUnlockFreq   = getopt.IntLong("device-unlock-freq", 'u', 600, "device unlocker frequency (resets the db is_polling flag)", "seconds")
+	maxDevLockTime  = getopt.IntLong("device-max-lock-time", 0, 600, "force unlock devices locked longer than this delay", "seconds")
 	keepAliveFreq   = getopt.IntLong("agent-keepalive-freq", 'k', 30, "agent keep-alive frequency", "seconds")
 	dbSnmpQueryFreq = getopt.IntLong("db-snmp-freq", 'q', 30, "db query frequency for available polling jobs (0 to disable snmp)", "seconds")
 	dbPingQueryFreq = getopt.IntLong("db-ping-freq", 'g', 10, "db query frequency for available ping jobs (0 to disable ping)", "seconds")
 	pingBatchCount  = getopt.IntLong("ping-batch-count", 0, 100, "number of hosts per fping process")
-	dbPollErrRP     = getopt.IntLong("error-flush-freq", 'r', 4, "how long to keep poll errors in reports table (0 is forever) *DEPRECATED*", "hours")
-	dbFlusherFreq   = getopt.IntLong("report-flush-freq", 0, 2, "db reports table flush frequency (all entries with report_received_at=null older than this period are deleted) *DEPRECATED*", "hours")
 	logDir          = getopt.StringLong("log", 0, "", "directory for log files. If empty, all log goes to stderr", "dir")
 	snmpLoadAvgWin  = getopt.IntLong("load-avg-window", 'w', 30, "SNMP load avg calculation window", "sec")
 	lockID          = getopt.IntLong("lock-id", 'l', 0, "pg advisory lock id to ensure single running process (0 to disable)")
 	lockDSN         = getopt.StringLong("lock-dsn", 'C', "", "postgres db DSN to use for advisory locks. Must be different from main DSN.", "url")
 	clusterHosts    = getopt.ListLong("cluster-hosts", 'H', "list of all hosts of the dispatcher cluster", "host1:port1,host2:port2,...")
 	dbMaxSnmpJobs   = getopt.IntLong("db-max-snmp-jobs", 'm', 200, "maximum number of snmp jobs to retrieve from db at each query")
+
+	dbPollErrRP   = getopt.IntLong("error-flush-freq", 'r', 4, "how long to keep poll errors in reports table (0 is forever) *DEPRECATED*", "hours")
+	dbFlusherFreq = getopt.IntLong("report-flush-freq", 0, 2, "db reports table flush frequency (all entries with report_received_at=null older than this period are deleted) *DEPRECATED*", "hours")
 )
 
 func main() {
@@ -223,13 +225,13 @@ func main() {
 		log.Info("ping requests disabled")
 	}
 
-	if *unlockFreq > 0 {
+	if *devUnlockFreq > 0 {
 		log.Debug("starting device unlocker goroutine")
 		go func() {
-			unlockTick := time.NewTicker(time.Duration(*unlockFreq) * time.Second)
+			unlockTick := time.NewTicker(time.Duration(*devUnlockFreq) * time.Second)
 			defer unlockTick.Stop()
 			for range unlockTick.C {
-				dispatcher.UnlockDevices()
+				dispatcher.UnlockDevices(*maxDevLockTime)
 			}
 		}()
 	}
