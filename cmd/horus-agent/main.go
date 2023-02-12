@@ -87,6 +87,7 @@ var (
 )
 
 func main() {
+	getopt.FlagLong(&agent.RxBufSize, "snmp-buf-size", 'b', "UDP receive buffer size for snmp replies (in bytes)")
 	getopt.SetParameters("")
 	getopt.Parse()
 
