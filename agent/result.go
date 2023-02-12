@@ -212,7 +212,7 @@ func MakeResult(pdu gosnmp.SnmpPDU, metric model.Metric) (Result, error) {
 		snmpType:     pdu.Type,
 		rawValue:     pdu.Value,
 	}
-	if len(pdu.Name) > len(metric.Oid) {
+	if len(pdu.Name) > len(metric.Oid)+1 {
 		res.suffix = pdu.Name[len(metric.Oid)+1:]
 	}
 	switch pdu.Type {
