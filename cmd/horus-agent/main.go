@@ -58,8 +58,10 @@ var (
 	logDir         = getopt.StringLong("log", 0, "", "directory for log files, disabled if empty (all log goes to stderr)", "dir")
 
 	// prometheus conf
-	maxResAge = getopt.IntLong("prom-max-age", 0, 0, "Maximum time to keep prometheus samples in mem, disabled if 0", "sec")
-	sweepFreq = getopt.IntLong("prom-sweep-frequency", 0, 120, "Prometheus old samples cleaning frequency", "sec")
+	maxResAge   = getopt.IntLong("prom-max-age", 0, 0, "Maximum time to keep prometheus samples in mem, disabled if 0", "sec")
+	sweepFreq   = getopt.IntLong("prom-sweep-frequency", 0, 120, "Prometheus old samples cleaning frequency", "sec")
+	promEP      = getopt.ListLong("prom-endpoints", 'P', "Prometheus endpoint list for remote write", "url1,url2,...")
+	promTimeout = getopt.IntLong("prom-timeout", 'T', 5, "Prometheus write timeout", "second")
 
 	// influx conf
 	influxHost    = getopt.StringLong("influx-host", 0, "", "influx server address (push to influx disabled if empty)")
@@ -126,9 +128,9 @@ func main() {
 		}
 	}
 
-	if *maxResAge == 0 && *influxHost == "" && len(*kafkaHosts) == 0 && len(*natsHosts) == 0 {
+	if len(*promEP) == 0 && len(*kafkaHosts) == 0 && len(*natsHosts) == 0 {
 		getopt.PrintUsage(os.Stderr)
-		glog.Exit("either prom-max-age, influx-host,kafka-host, or nats-host must be defined")
+		glog.Exit("either prom-endpoints, influx-host, kafka-host, or nats-host must be defined")
 	}
 
 	agent.MockMode = *mock
@@ -165,6 +167,12 @@ func main() {
 		}
 	}
 
+	if len(*promEP) != 0 {
+		if err := agent.NewPromClient(*promEP, *promTimeout); err != nil {
+			glog.Exitf("init Prom client: %v", err)
+		}
+	}
+
 	http.HandleFunc(model.SnmpJobURI, agent.HandleSnmpRequest)
 	http.HandleFunc(model.CheckURI, agent.HandleCheck)
 	http.HandleFunc(model.OngoingURI, agent.HandleOngoing)
@@ -181,21 +189,14 @@ func main() {
 // jobs to finish and for a last prom scrape before exiting.
 func handleStop(w http.ResponseWriter, r *http.Request) {
 	log.Infof("** graceful stop request from %s", r.RemoteAddr)
-	initialScrapeCount := agent.SnmpScrapeCount()
 	agent.GracefulQuitMode = true
+	maxLoops := 20
 	if agent.CurrentSNMPLoad() == 0 {
 		goto end
 	}
-	for agent.CurrentSNMPLoad() > 0 {
+	for agent.CurrentSNMPLoad() > 0 && maxLoops >= 0 {
+		maxLoops--
 		time.Sleep(500 * time.Millisecond)
-	}
-	if *maxResAge > 0 {
-		// wait for a final prom scrape with a 5mn timeout
-		remainingLoops := 600
-		for agent.SnmpScrapeCount() == initialScrapeCount && remainingLoops > 0 {
-			time.Sleep(500 * time.Millisecond)
-			remainingLoops--
-		}
 	}
 end:
 	_, cancel := context.WithCancel(context.Background())

@@ -187,16 +187,10 @@ func updateStats() {
 	defer tick.Stop()
 	for range tick.C {
 		var snmpSampleCount int
-		if snmpCollector != nil {
-			snmpSampleCount = len(snmpCollector.Samples)
-		}
 		currSampleCount.Set(float64(snmpSampleCount))
 		ongoingPollCount.Set(float64(len(ongoingReqs)))
 		totalPollCount.Set(float64(totalPolls))
 		heapMem.Set(usedMem)
-		snmpScrapes.Set(float64(snmpCollector.scrapeCount))
-		snmpScrapeDuration.Set(float64(snmpCollector.scrapeDuration) / float64(time.Second))
-		log.Debugf("ongoing=%d total_polled=%d prom_samples=%d scrape_count=%d scrape_dur=%v heap=%.0fMiB", len(ongoingReqs), totalPolls,
-			snmpSampleCount, snmpCollector.scrapeCount, snmpCollector.scrapeDuration, usedMem/1024/1024)
+		log.Debugf("ongoing=%d total_polled=%d heap=%.0fMiB", len(ongoingReqs), totalPolls, usedMem/1024/1024)
 	}
 }

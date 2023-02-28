@@ -93,13 +93,13 @@ var (
 		Name: "agent_system_memory_bytes",
 		Help: "System memory for this agent.",
 	})
-	snmpScrapes = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "agent_snmp_scrape_total",
-		Help: "Number of total prometheus snmp scrapes count.",
+	snmpPushCount = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "agent_snmp_push_total",
+		Help: "Number of total prometheus remote writes for snmp metrics.",
 	})
-	snmpScrapeDuration = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "agent_snmp_scrape_duration_seconds",
-		Help: "snmp scrape duration.",
+	snmpPushDuration = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "agent_snmp_push_duration_seconds",
+		Help: "Prom remote write duration for snmp metrics.",
 	})
 	totalPollCount = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "agent_snmp_poll_count_total",
@@ -111,16 +111,11 @@ var (
 	}, CurrentSNMPLoad)
 )
 
-var (
-	snmpCollector     *SnmpCollector
-	pingCollector     *PingCollector
-	pollStatCollector *PromCollector
-)
+var pingCollector *PingCollector
 
 // InitCollectors initializes the snmp and ping collectors with retention time and cleanup frequency.
 // We have three collectors:
 // - /metrics for internal poll related metrics
-// - /snmpmetrics for snmp polling results
 // - /pingmetrics for ping results
 func InitCollectors(maxResAge, sweepFreq int) {
 	workersCount.Set(float64(MaxSNMPRequests))
@@ -130,8 +125,8 @@ func InitCollectors(maxResAge, sweepFreq int) {
 	prometheus.MustRegister(workersCount)
 	prometheus.MustRegister(heapMem)
 	prometheus.MustRegister(sysMem)
-	prometheus.MustRegister(snmpScrapes)
-	prometheus.MustRegister(snmpScrapeDuration)
+	prometheus.MustRegister(snmpPushCount)
+	prometheus.MustRegister(snmpPushDuration)
 	prometheus.MustRegister(totalPollCount)
 	prometheus.MustRegister(snmpLoad)
 	prometheus.MustRegister(prometheus.NewGaugeFunc(
@@ -143,14 +138,9 @@ func InitCollectors(maxResAge, sweepFreq int) {
 		func() float64 { return 1 }))
 	http.Handle("/metrics", promhttp.Handler())
 
-	if sc := NewCollector(maxResAge, sweepFreq, "/snmpmetrics"); sc != nil {
-		snmpCollector = &SnmpCollector{PromCollector: sc}
-	}
 	if pc := NewCollector(maxResAge, sweepFreq, "/pingmetrics"); pc != nil {
 		pingCollector = &PingCollector{PromCollector: pc}
 	}
-
-	pollStatCollector = NewCollector(coalesceInt(maxResAge, 60), coalesceInt(sweepFreq, 30), "")
 }
 
 // NewCollector creates a new prometheus collector
@@ -227,7 +217,7 @@ func (c *PromCollector) Collect(ch chan<- prometheus.Metric) {
 		samples = append(samples, dup)
 	}
 	c.Unlock()
-	log.Debug2f("%d current snmp samples copied for scrape", len(samples))
+	log.Debug2f("%d current prom samples copied for scrape", len(samples))
 	for i, sample := range samples {
 		desc := prometheus.NewDesc(sample.Name, sample.Desc, nil, sample.Labels)
 		metr, err := prometheus.NewConstMetric(desc, prometheus.UntypedValue, sample.Value)
