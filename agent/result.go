@@ -365,7 +365,7 @@ func MakeIndexed(uid string, meas model.IndexedMeasure, tabResults []TabularResu
 
 	if !meas.IndexMetricID.Valid {
 		// multiple independent indexed metrics
-		log.Debug3f("independent results for meas %+v: %+v", meas, tabResults)
+		log.Debug3f("independent results for meas %+v", meas)
 		var results []Result
 		for _, tabRes := range tabResults {
 			for _, res := range tabRes {
@@ -373,6 +373,7 @@ func MakeIndexed(uid string, meas model.IndexedMeasure, tabResults []TabularResu
 			}
 		}
 		indexed.Results = append(indexed.Results, results)
+		log.Debug3f(">> corresponding indexed: %+v", indexed)
 		return indexed
 	}
 
