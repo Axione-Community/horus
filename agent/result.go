@@ -15,6 +15,7 @@
 package agent
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -270,7 +271,9 @@ func MakeResult(pdu gosnmp.SnmpPDU, metric model.Metric) (Result, error) {
 				}
 				res.Value = float64(v)
 			case "trim":
-				res.Value = strings.TrimSpace(string(val))
+				val = bytes.Trim(val, "\x00")
+				val = bytes.TrimSpace(val)
+				res.Value = val
 			case "extract-int", "extract-float":
 				num := numberPat.FindString(string(val))
 				if num == "" {
@@ -289,7 +292,7 @@ func MakeResult(pdu gosnmp.SnmpPDU, metric model.Metric) (Result, error) {
 					}
 					fmt.Fprintf(&buf, "%02x", b)
 				}
-				res.Value = buf.String()
+				res.Value = []byte(buf.String())
 			}
 		case float64:
 			switch {
