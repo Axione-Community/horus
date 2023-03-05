@@ -8,6 +8,7 @@ HORUS_BIN_DIR=$(HORUS_CLI_DIR)/bin
 HORUS_DISPATCHER=horus-dispatcher
 HORUS_AGENT=horus-agent
 HORUS_QUERY=horus-query
+HORUS_WALK=horus-walk
 
 all:
 	go build $(LDFLAGS) -o $(HORUS_BIN_DIR) ./...
@@ -20,6 +21,9 @@ agent:
 
 query:
 	go build $(LDFLAGS) -o $(HORUS_BIN_DIR) $(HORUS_CLI_DIR)/$(HORUS_QUERY)
+
+walk:
+	go build $(LDFLAGS) -o $(HORUS_BIN_DIR) $(HORUS_CLI_DIR)/$(HORUS_WALK)
 
 install:
 	go install $(LDFLAGS) ./...
@@ -34,6 +38,6 @@ clean:
 	rm -f $(HORUS_BIN_DIR)/*
 	go clean -i -testcache -modcache ./...
 
-.PHONY: all dispatcher agent query install test cov clean
+.PHONY: all dispatcher agent query walk install test cov clean
 
 -include Makefile.local
