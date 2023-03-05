@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -61,36 +62,42 @@ func (c *PromClient) Push(pollRes PollResult) {
 	}
 	data := snappy.Encode(nil, pb)
 
+	var wg sync.WaitGroup
 	for _, ep := range c.Endpoints {
-		req, err := http.NewRequestWithContext(StopCtx, http.MethodPost, ep, bytes.NewBuffer(data))
-		if err != nil {
-			log.Errorf("prom cli[%s]: http req for %s: %v", pollRes.RequestID, ep, err)
-			continue
-		}
-		req.Header.Add("X-Prometheus-Remote-Write-Version", "0.1.0")
-		req.Header.Add("Content-Encoding", "snappy")
-		req.Header.Set("Content-Type", "application/x-protobuf")
-		client := &http.Client{Timeout: time.Duration(c.Timeout) * time.Second}
-		log.Debugf("prom cli[%s]: posting %d metrics to %s", pollRes.RequestID, len(ts), ep)
-		start := time.Now()
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Errorf("prom cli[%s]: remote write to %s: %v", pollRes.RequestID, ep, err)
-			continue
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode/100 != 2 {
-			body, _ := io.ReadAll(resp.Body)
-			log.Errorf("prom cli[%s]: remote write to %s: returned %d: %s", pollRes.RequestID, ep, resp.StatusCode, body)
-			c.totalPushErrors++
-		} else {
-			c.totalPushCount++
-			c.lastPushDurationMs = int(time.Since(start) / time.Millisecond)
-			log.Infof("prom cli[%s]: remote write to %s succeeded in %dms: %s", pollRes.RequestID, ep, c.lastPushDurationMs, resp.Status)
-		}
-		snmpPushCount.Set(float64(c.totalPushCount))
-		snmpPushDuration.Set(float64(c.lastPushDurationMs) / 1000)
+		wg.Add(1)
+		go func(ep string) {
+			defer wg.Done()
+			req, err := http.NewRequestWithContext(StopCtx, http.MethodPost, ep, bytes.NewBuffer(data))
+			if err != nil {
+				log.Errorf("prom cli[%s]: http req for %s: %v", pollRes.RequestID, ep, err)
+				return
+			}
+			req.Header.Add("X-Prometheus-Remote-Write-Version", "0.1.0")
+			req.Header.Add("Content-Encoding", "snappy")
+			req.Header.Set("Content-Type", "application/x-protobuf")
+			client := &http.Client{Timeout: time.Duration(c.Timeout) * time.Second}
+			log.Debugf("prom cli[%s]: posting %d metrics to %s", pollRes.RequestID, len(ts), ep)
+			start := time.Now()
+			resp, err := client.Do(req)
+			if err != nil {
+				log.Errorf("prom cli[%s]: remote write to %s: %v", pollRes.RequestID, ep, err)
+				return
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode/100 != 2 {
+				body, _ := io.ReadAll(resp.Body)
+				log.Errorf("prom cli[%s]: remote write to %s: returned %d: %s", pollRes.RequestID, ep, resp.StatusCode, body)
+				c.totalPushErrors++
+			} else {
+				c.totalPushCount++
+				c.lastPushDurationMs = int(time.Since(start) / time.Millisecond)
+				log.Infof("prom cli[%s]: remote write to %s succeeded in %dms: %s", pollRes.RequestID, ep, c.lastPushDurationMs, resp.Status)
+			}
+			snmpPushCount.Set(float64(c.totalPushCount))
+			snmpPushDuration.Set(float64(c.lastPushDurationMs) / 1000)
+		}(ep)
 	}
+	wg.Wait()
 }
 
 func (p *PollResult) SNMPMetricsToPromTS() []prompb.TimeSeries {
