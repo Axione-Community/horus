@@ -294,6 +294,23 @@ func MakeResult(pdu gosnmp.SnmpPDU, metric model.Metric) (Result, error) {
 				}
 				res.Value = []byte(buf.String())
 			}
+			switch {
+			case strings.HasPrefix(pp, "extract-regex"):
+				if len(pp) <= len("extract-regex")+1 {
+					return res, fmt.Errorf("%s: invalid post-processor `%s`: must have argument", res.Name, pp)
+				}
+				sep := []byte(pp[len("extract-regex") : len("extract-regex")+1])
+				pat := pp[len("extract-regex")+1:]
+				ppRegex, err := regexp.Compile(pat)
+				if err != nil {
+					return res, fmt.Errorf("%s: invalid post-process regex `%s`: %v", res.Name, pat, err)
+				}
+				submatches := ppRegex.FindSubmatch(val)
+				if len(submatches) < 2 {
+					return res, fmt.Errorf("%s: result `%s` does not match regex `%s`", res.Name, res.Value, pat)
+				}
+				res.Value = bytes.Join(submatches[1:], sep)
+			}
 		case float64:
 			switch {
 			case strings.HasPrefix(pp, "div-"), strings.HasPrefix(pp, "div:"):
