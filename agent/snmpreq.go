@@ -62,7 +62,7 @@ type snmpwalkResult struct {
 }
 
 // RxBuzSize is the udp receive buffer size
-var RxBufSize int = 3000
+var RxBufSize int = 6000
 
 // UnmarshalJSON implements json unmarshaler for SnmpRequest.
 func (s *SnmpRequest) UnmarshalJSON(data []byte) error {
