@@ -39,10 +39,10 @@ type Result struct {
 	Oid string `json:"oid"`
 
 	// Name is the metric name (from SNMP MIB usually).
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 
 	// ExportedName is the name of the exported metric.
-	ExportedName string `json:"exported_name"`
+	ExportedName string `json:"exported_name,omitempty"`
 
 	// Description is the metric description copied from request.
 	Description string `json:"description,omitempty"`
