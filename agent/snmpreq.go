@@ -386,12 +386,12 @@ func (s *SnmpRequest) walkMeasure(ctx context.Context, measure model.IndexedMeas
 			for grouped := range groupedMetrics {
 				oid, name := grouped[0].Oid, grouped[0].Name
 				start := time.Now()
-				s.Debugf(2, "con#%d: start walking indexed oid %s [%s], %d metric(s)", conIdx, oid, name, len(grouped))
+				s.Debugf(3, "con#%d: start walking indexed oid %s [%s], %d metric(s)", conIdx, oid, name, len(grouped))
 				groupedRes, err := s.walkMetric(ctx, grouped, conIdx, measure.UseAlternateCommunity)
 				walkResults <- snmpwalkResult{oid, groupedRes, err}
-				s.Debugf(2, "con#%d: done walking indexed oid %s [%s]: took %v", conIdx, oid, name, time.Since(start).Truncate(time.Millisecond))
+				s.Debugf(3, "con#%d: done walking indexed oid %s [%s]: took %v", conIdx, oid, name, time.Since(start).Truncate(time.Millisecond))
 			}
-			s.Debugf(2, "con#%d: measure %s: oid loop terminated", conIdx, measure.Name)
+			s.Debugf(2, "con#%d: measure %s: walk completed", conIdx, measure.Name)
 		}(conIdx)
 	}
 
@@ -405,7 +405,7 @@ func (s *SnmpRequest) walkMeasure(ctx context.Context, measure model.IndexedMeas
 		if len(res.tab) > 0 {
 			tabResults = append(tabResults, res.tab)
 		} else {
-			s.Debugf(2, "walkMetric %s: skipping empty tabular result", res.oid)
+			s.Debugf(3, "walkMetric %s: skipping empty tabular result", res.oid)
 		}
 	}
 
