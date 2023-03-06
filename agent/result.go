@@ -340,6 +340,12 @@ func MakeResult(pdu gosnmp.SnmpPDU, metric model.Metric) (Result, error) {
 			log.Warningf("post processor: unhandled type %T (%[1]v for pdu type %v)", res.Value, pdu.Type)
 		}
 	}
+
+	// converts final byte arr to string
+	switch val := res.Value.(type) {
+	case []byte:
+		res.Value = string(val)
+	}
 	return res, nil
 }
 
