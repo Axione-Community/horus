@@ -224,8 +224,10 @@ func MakeResult(pdu gosnmp.SnmpPDU, metric model.Metric) (Result, error) {
 	switch pdu.Type {
 	case gosnmp.NoSuchObject:
 		return res, fmt.Errorf("oid %s: NoSuchObject", pdu.Name)
-	case gosnmp.OctetString, gosnmp.IPAddress:
+	case gosnmp.OctetString:
 		res.Value = pdu.Value.([]byte)
+	case gosnmp.IPAddress:
+		res.Value = []byte(pdu.Value.(string))
 	case gosnmp.Counter64:
 		// 64 bit counters are automatically wrapped by 2^53 to avoid precision loss due
 		// to rounding (https://en.wikipedia.org/wiki/Double-precision_floating-point_format)
