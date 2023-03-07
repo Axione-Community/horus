@@ -503,7 +503,7 @@ func handlePollResults() {
 		go natsCli.Push(res)
 		go promCli.Push(res)
 		go influxCli.Push(res)
-		res.sendReport()
+		go res.sendReport()
 	}
 }
 
