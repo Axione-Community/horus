@@ -19,15 +19,19 @@ import (
 type PromClient struct {
 	Endpoints []string
 	Timeout   int
+	BatchSize int
 
 	totalPushErrors    int
 	totalPushCount     int
 	lastPushDurationMs int
+
+	tsQueue []prompb.TimeSeries
+	sync.Mutex
 }
 
 var promCli *PromClient
 
-func NewPromClient(endpoints []string, timeout int) error {
+func NewPromClient(endpoints []string, timeout, bsize int) error {
 	if len(endpoints) == 0 || timeout <= 0 {
 		return errors.New("prometheus endpoint(s) and timeout must be defined")
 	}
@@ -39,6 +43,8 @@ func NewPromClient(endpoints []string, timeout int) error {
 	promCli = &PromClient{
 		Endpoints: endpoints,
 		Timeout:   timeout,
+		BatchSize: bsize,
+		tsQueue:   make([]prompb.TimeSeries, 0, bsize),
 	}
 	return nil
 }
@@ -50,14 +56,29 @@ func (c *PromClient) Push(pollRes PollResult) {
 		return
 	}
 
+	log.Debugf("prom: pushing poll results from %s", pollRes.RequestID)
 	ts := append(pollRes.SNMPMetricsToPromTS(), pollRes.pollStatsToPromTS()...)
 	if len(ts) == 0 {
-		log.Infof("prom cli[%s]: skip pushing empty poll result for device #%d", pollRes.RequestID, pollRes.DeviceID)
+		log.Infof("prom: skip pushing empty poll result for device #%d", pollRes.DeviceID)
 		return
 	}
-	pb, err := proto.Marshal(&prompb.WriteRequest{Timeseries: ts})
+
+	var tseries []prompb.TimeSeries
+	c.Lock()
+	c.tsQueue = append(c.tsQueue, ts...)
+	if len(c.tsQueue) < c.BatchSize {
+		log.Debugf("prom: batch not full yet (%d tseries), skip write", len(c.tsQueue))
+		c.Unlock()
+		return
+	}
+	tseries = c.tsQueue
+	c.tsQueue = make([]prompb.TimeSeries, 0, c.BatchSize)
+	c.Unlock()
+
+	log.Debugf("prom: batch complete (%d tseries), writing to prom", len(tseries))
+	pb, err := proto.Marshal(&prompb.WriteRequest{Timeseries: tseries})
 	if err != nil {
-		log.Errorf("prom cli[%s]: proto marshal: %v", pollRes.RequestID, err)
+		log.Errorf("prom: proto marshal: %v", err)
 		return
 	}
 	data := snappy.Encode(nil, pb)
@@ -69,29 +90,29 @@ func (c *PromClient) Push(pollRes PollResult) {
 			defer wg.Done()
 			req, err := http.NewRequestWithContext(StopCtx, http.MethodPost, ep, bytes.NewBuffer(data))
 			if err != nil {
-				log.Errorf("prom cli[%s]: http req for %s: %v", pollRes.RequestID, ep, err)
+				log.Errorf("prom: http req for %s: %v", ep, err)
 				return
 			}
 			req.Header.Add("X-Prometheus-Remote-Write-Version", "0.1.0")
 			req.Header.Add("Content-Encoding", "snappy")
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			client := &http.Client{Timeout: time.Duration(c.Timeout) * time.Second}
-			log.Debugf("prom cli[%s]: posting %d metrics to %s", pollRes.RequestID, len(ts), ep)
+			log.Debugf("prom: posting %d metrics to %s", len(ts), ep)
 			start := time.Now()
 			resp, err := client.Do(req)
 			if err != nil {
-				log.Errorf("prom cli[%s]: remote write to %s: %v", pollRes.RequestID, ep, err)
+				log.Errorf("prom: remote write to %s: %v", ep, err)
 				return
 			}
 			defer resp.Body.Close()
 			if resp.StatusCode/100 != 2 {
 				body, _ := io.ReadAll(resp.Body)
-				log.Errorf("prom cli[%s]: remote write to %s: returned %d: %s", pollRes.RequestID, ep, resp.StatusCode, body)
+				log.Errorf("prom: remote write to %s: returned %d: %s", ep, resp.StatusCode, body)
 				c.totalPushErrors++
 			} else {
 				c.totalPushCount++
 				c.lastPushDurationMs = int(time.Since(start) / time.Millisecond)
-				log.Infof("prom cli[%s]: remote write to %s succeeded in %dms: %s", pollRes.RequestID, ep, c.lastPushDurationMs, resp.Status)
+				log.Infof("prom: remote write to %s succeeded in %dms: %s", ep, c.lastPushDurationMs, resp.Status)
 			}
 			snmpPushCount.Set(float64(c.totalPushCount))
 			snmpPushDuration.Set(float64(c.lastPushDurationMs) / 1000)

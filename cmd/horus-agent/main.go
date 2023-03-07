@@ -58,10 +58,11 @@ var (
 	logDir         = getopt.StringLong("log", 0, "", "directory for log files, disabled if empty (all log goes to stderr)", "dir")
 
 	// prometheus conf
-	maxResAge   = getopt.IntLong("prom-max-age", 0, 0, "Maximum time to keep prometheus samples in mem, disabled if 0", "sec")
-	sweepFreq   = getopt.IntLong("prom-sweep-frequency", 0, 120, "Prometheus old samples cleaning frequency", "sec")
-	promEP      = getopt.ListLong("prom-endpoints", 'P', "Prometheus endpoint list for remote write", "url1,url2,...")
-	promTimeout = getopt.IntLong("prom-timeout", 'T', 5, "Prometheus write timeout", "second")
+	maxResAge     = getopt.IntLong("prom-max-age", 0, 0, "Maximum time to keep prometheus samples in mem, disabled if 0", "sec")
+	sweepFreq     = getopt.IntLong("prom-sweep-frequency", 0, 120, "Prometheus old samples cleaning frequency", "sec")
+	promEP        = getopt.ListLong("prom-endpoints", 'P', "Prometheus endpoint list for remote write", "url1,url2,...")
+	promTimeout   = getopt.IntLong("prom-timeout", 'T', 5, "Prometheus write timeout", "second")
+	promBatchSize = getopt.IntLong("prom-batch-size", 'B', 5000, "Number of timeseries to accumulate before a remote write")
 
 	// influx conf
 	influxHost    = getopt.StringLong("influx-host", 0, "", "influx server address (push to influx disabled if empty)")
@@ -168,7 +169,7 @@ func main() {
 	}
 
 	if len(*promEP) != 0 {
-		if err := agent.NewPromClient(*promEP, *promTimeout); err != nil {
+		if err := agent.NewPromClient(*promEP, *promTimeout, *promBatchSize); err != nil {
 			glog.Exitf("init Prom client: %v", err)
 		}
 	}
