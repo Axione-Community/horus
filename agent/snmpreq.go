@@ -330,7 +330,7 @@ func (s *SnmpRequest) walkMetric(ctx context.Context, grouped []model.Metric, co
 		}
 		return nil
 	}
-	s.Debugf(2, "con#%d: walking indexed metric %s, alternate community: %v", conIdx, oid, useAltCommunity)
+	s.Debugf(3, "con#%d: walking indexed metric %s, alternate community: %v", conIdx, oid, useAltCommunity)
 	cli := s.snmpClis[conIdx]
 	if useAltCommunity && s.Device.AlternateCommunity != "" {
 		cli.Community = s.Device.AlternateCommunity
