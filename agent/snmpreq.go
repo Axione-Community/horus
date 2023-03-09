@@ -238,6 +238,7 @@ func (s *SnmpRequest) getMeasure(ctx context.Context, meas model.ScalarMeasure) 
 	snmpResults := make(chan snmpgetResult)
 	for i, cli := range s.snmpClis {
 		go func(i int, cli *gosnmp.GoSNMP) {
+			s.Debugf(3, "con#%d: measure %s: metric loop started", i, meas.Name)
 			for metric := range metrics {
 				if meas.UseAlternateCommunity && s.Device.AlternateCommunity != "" {
 					cli.Community = s.Device.AlternateCommunity
@@ -264,12 +265,8 @@ func (s *SnmpRequest) getMeasure(ctx context.Context, meas model.ScalarMeasure) 
 	for range meas.Metrics {
 		snmpres := <-snmpResults // we cannot range over snmpResults as it is never closed
 		metric := snmpres.metric
-		if snmpres.err != nil {
+		if snmpres.err != nil && snmpErr == nil {
 			snmpErr = fmt.Errorf("get %s: %v", metric.Name, snmpres.err)
-		}
-		if ErrIsUnreachable(snmpres.err) {
-			// escape from the blocking chan read
-			break
 		}
 		if snmpres.pkt == nil {
 			continue
