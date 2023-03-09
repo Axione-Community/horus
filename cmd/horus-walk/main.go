@@ -26,8 +26,8 @@ var (
 
 	showVersion    = getopt.BoolLong("version", 'v', "Print version and build date")
 	debug          = getopt.IntLong("debug", 'd', 0, "debug level")
-	host           = getopt.StringLong("host", 'h', "", "snmp host")
-	port           = getopt.IntLong("port", 'p', 161, "snmp port")
+	host           = getopt.StringLong("host", 'H', "", "snmp device host")
+	port           = getopt.IntLong("port", 'p', 161, "snmp device port")
 	community      = getopt.StringLong("community", 'c', "public", "snmp community")
 	postProcessors = getopt.ListLong("post-processors", 'P', "post processors to apply to values", "pp1,pp2,...")
 	rxBufSize      = getopt.IntLong("rx-buf-size", 'b', 0, "snmp RX buffer size (0: keep internal default value)")
