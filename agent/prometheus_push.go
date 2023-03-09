@@ -56,7 +56,7 @@ func NewPromClient(endpoints []string, timeout, bsize, deadline int) error {
 }
 
 func (c *PromClient) Close() {
-	log.Infof("prom: flushing remote write buffer before close (%d metrics)", len(c.tsQueue))
+	log.Infof("prom: flushing remote write buffer on close (%d metrics)", len(c.tsQueue))
 	c.flushPromBuffer()
 }
 
@@ -88,6 +88,7 @@ func (c *PromClient) Push(pollRes PollResult) {
 
 func (c *PromClient) flushPromBuffer() {
 	if len(c.tsQueue) == 0 {
+		log.Debug3("prom: queue empty, nothing to push")
 		return
 	}
 
