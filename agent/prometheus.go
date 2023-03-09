@@ -97,6 +97,10 @@ var (
 		Name: "agent_snmp_push_total",
 		Help: "Number of total prometheus remote writes for snmp metrics.",
 	})
+	snmpPushErrorCount = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "agent_snmp_push_error_total",
+		Help: "Number of total prometheus remote writes failures for snmp metrics.",
+	})
 	snmpPushDuration = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "agent_snmp_push_duration_seconds",
 		Help: "Prom remote write duration for snmp metrics.",
@@ -126,6 +130,7 @@ func InitCollectors(maxResAge, sweepFreq int) {
 	prometheus.MustRegister(heapMem)
 	prometheus.MustRegister(sysMem)
 	prometheus.MustRegister(snmpPushCount)
+	prometheus.MustRegister(snmpPushErrorCount)
 	prometheus.MustRegister(snmpPushDuration)
 	prometheus.MustRegister(totalPollCount)
 	prometheus.MustRegister(snmpLoad)
