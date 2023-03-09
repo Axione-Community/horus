@@ -61,8 +61,9 @@ var (
 	maxResAge     = getopt.IntLong("prom-max-age", 0, 0, "Maximum time to keep prometheus samples in mem, disabled if 0", "sec")
 	sweepFreq     = getopt.IntLong("prom-sweep-frequency", 0, 120, "Prometheus old samples cleaning frequency", "sec")
 	promEP        = getopt.ListLong("prom-endpoints", 'P', "Prometheus endpoint list for remote write", "url1,url2,...")
-	promTimeout   = getopt.IntLong("prom-timeout", 'T', 5, "Prometheus write timeout", "second")
+	promTimeout   = getopt.IntLong("prom-timeout", 'T', 5, "Prometheus write timeout", "sec")
 	promBatchSize = getopt.IntLong("prom-batch-size", 'B', 5000, "Number of timeseries to accumulate before a remote write")
+	promDeadline  = getopt.IntLong("prom-push-deadline", 'D', 300, "Max time to wait before remote write even if buffer is not full", "sec")
 
 	// influx conf
 	influxHost    = getopt.StringLong("influx-host", 0, "", "influx server address (push to influx disabled if empty)")
@@ -134,6 +135,10 @@ func main() {
 		glog.Exit("either prom-endpoints, influx-host, kafka-host, or nats-host must be defined")
 	}
 
+	if len(*promEP) > 0 && *promBatchSize == 0 && *promDeadline == 0 {
+		glog.Exit("either prom-batch-size or prom-push-deadline must be defined with prom-endpoints")
+	}
+
 	agent.MockMode = *mock
 	agent.MaxSNMPRequests = *snmpJobCount
 	agent.MaxAllowedLoad = float64(*maxMemLoad) / 100
@@ -169,7 +174,7 @@ func main() {
 	}
 
 	if len(*promEP) != 0 {
-		if err := agent.NewPromClient(*promEP, *promTimeout, *promBatchSize); err != nil {
+		if err := agent.NewPromClient(*promEP, *promTimeout, *promBatchSize, *promDeadline, ctx); err != nil {
 			glog.Exitf("init Prom client: %v", err)
 		}
 	}

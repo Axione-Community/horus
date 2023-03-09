@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"horus/log"
@@ -20,10 +21,13 @@ type PromClient struct {
 	Endpoints []string
 	Timeout   int
 	BatchSize int
+	Deadline  time.Duration
 
-	totalPushErrors    int
+	totalPushError     int
 	totalPushCount     int
 	lastPushDurationMs int
+	lastFluched        time.Time
+	ctx                context.Context
 
 	tsQueue []prompb.TimeSeries
 	sync.Mutex
@@ -31,7 +35,7 @@ type PromClient struct {
 
 var promCli *PromClient
 
-func NewPromClient(endpoints []string, timeout, bsize int) error {
+func NewPromClient(endpoints []string, timeout, bsize, deadline int, ctx context.Context) error {
 	if len(endpoints) == 0 || timeout <= 0 {
 		return errors.New("prometheus endpoint(s) and timeout must be defined")
 	}
@@ -45,11 +49,19 @@ func NewPromClient(endpoints []string, timeout, bsize int) error {
 		Timeout:   timeout,
 		BatchSize: bsize,
 		tsQueue:   make([]prompb.TimeSeries, 0, bsize),
+		ctx:       ctx,
+	}
+	if deadline > 0 {
+		promCli.Deadline = time.Duration(deadline) * time.Second
+		go promCli.checkDeadline()
 	}
 	return nil
 }
 
-func (c *PromClient) Close() {}
+func (c *PromClient) Close() {
+	log.Infof("prom: flushing remote write buffer before close (%d metrics)", len(c.tsQueue))
+	c.flushPromBuffer()
+}
 
 func (c *PromClient) Push(pollRes PollResult) {
 	if c == nil {
@@ -62,20 +74,30 @@ func (c *PromClient) Push(pollRes PollResult) {
 		log.Infof("prom: skip pushing empty poll result for device #%d", pollRes.DeviceID)
 		return
 	}
-
-	var tseries []prompb.TimeSeries
 	c.Lock()
 	c.tsQueue = append(c.tsQueue, ts...)
-	if len(c.tsQueue) < c.BatchSize {
-		log.Debugf("prom: batch not full yet (%d tseries), skip write", len(c.tsQueue))
-		c.Unlock()
-		return
-	}
-	tseries = c.tsQueue
-	c.tsQueue = make([]prompb.TimeSeries, 0, c.BatchSize)
 	c.Unlock()
 
-	log.Debugf("prom: batch complete (%d tseries), writing to prom", len(tseries))
+	if c.BatchSize == 0 {
+		// only deadline-based push
+		return
+	}
+	if len(c.tsQueue) < c.BatchSize {
+		log.Debugf("prom: batch not full yet (%d/%d), skip write", len(c.tsQueue), c.BatchSize)
+		return
+	}
+	c.flushPromBuffer()
+}
+
+func (c *PromClient) flushPromBuffer() {
+	var tseries []prompb.TimeSeries
+	c.Lock()
+	tseries = c.tsQueue
+	c.tsQueue = make([]prompb.TimeSeries, 0, c.BatchSize)
+	c.lastFluched = time.Now()
+	c.Unlock()
+
+	log.Debugf("prom: writing %d timeseries to prom", len(tseries))
 	pb, err := proto.Marshal(&prompb.WriteRequest{Timeseries: tseries})
 	if err != nil {
 		log.Errorf("prom: proto marshal: %v", err)
@@ -97,7 +119,7 @@ func (c *PromClient) Push(pollRes PollResult) {
 			req.Header.Add("Content-Encoding", "snappy")
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			client := &http.Client{Timeout: time.Duration(c.Timeout) * time.Second}
-			log.Debugf("prom: posting %d metrics to %s", len(ts), ep)
+			log.Debugf("prom: posting %d metrics to %s", len(tseries), ep)
 			start := time.Now()
 			resp, err := client.Do(req)
 			if err != nil {
@@ -108,17 +130,35 @@ func (c *PromClient) Push(pollRes PollResult) {
 			if resp.StatusCode/100 != 2 {
 				body, _ := io.ReadAll(resp.Body)
 				log.Errorf("prom: remote write to %s: returned %d: %s", ep, resp.StatusCode, body)
-				c.totalPushErrors++
+				c.totalPushError++
 			} else {
 				c.totalPushCount++
 				c.lastPushDurationMs = int(time.Since(start) / time.Millisecond)
 				log.Infof("prom: remote write to %s succeeded in %dms: %s", ep, c.lastPushDurationMs, resp.Status)
 			}
 			snmpPushCount.Set(float64(c.totalPushCount))
+			snmpPushErrorCount.Set(float64(c.totalPushError))
 			snmpPushDuration.Set(float64(c.lastPushDurationMs) / 1000)
 		}(ep)
 	}
 	wg.Wait()
+}
+
+func (c *PromClient) checkDeadline() {
+	ticker := time.NewTicker(c.Deadline / 3)
+	for {
+		select {
+		case <-c.ctx.Done():
+			log.Infof("prom: context done: flushing buffer (%d tseries)", len(c.tsQueue))
+			c.flushPromBuffer()
+		case <-ticker.C:
+			minLastFlush := time.Now().Add(-c.Deadline)
+			if c.lastFluched.Before(minLastFlush) {
+				log.Infof("prom: deadline reached since last push, flushing buffer (%d tseries)", len(c.tsQueue))
+				c.flushPromBuffer()
+			}
+		}
+	}
 }
 
 func (p *PollResult) SNMPMetricsToPromTS() []prompb.TimeSeries {
