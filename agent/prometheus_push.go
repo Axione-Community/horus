@@ -2,7 +2,6 @@ package agent
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"horus/log"
@@ -27,7 +26,6 @@ type PromClient struct {
 	totalPushCount     int
 	lastPushDurationMs int
 	lastFluched        time.Time
-	ctx                context.Context
 
 	tsQueue []prompb.TimeSeries
 	sync.Mutex
@@ -35,7 +33,7 @@ type PromClient struct {
 
 var promCli *PromClient
 
-func NewPromClient(endpoints []string, timeout, bsize, deadline int, ctx context.Context) error {
+func NewPromClient(endpoints []string, timeout, bsize, deadline int) error {
 	if len(endpoints) == 0 || timeout <= 0 {
 		return errors.New("prometheus endpoint(s) and timeout must be defined")
 	}
@@ -49,7 +47,6 @@ func NewPromClient(endpoints []string, timeout, bsize, deadline int, ctx context
 		Timeout:   timeout,
 		BatchSize: bsize,
 		tsQueue:   make([]prompb.TimeSeries, 0, bsize),
-		ctx:       ctx,
 	}
 	if deadline > 0 {
 		promCli.Deadline = time.Duration(deadline) * time.Second
@@ -152,9 +149,9 @@ func (c *PromClient) checkDeadline() {
 	ticker := time.NewTicker(c.Deadline / 3)
 	for {
 		select {
-		case <-c.ctx.Done():
-			log.Infof("prom: context done: flushing buffer (%d tseries)", len(c.tsQueue))
-			c.flushPromBuffer()
+		case <-StopCtx.Done():
+			log.Info("prom: context done: closing prom connection")
+			c.Close()
 			return
 		case <-ticker.C:
 			minLastFlush := time.Now().Add(-c.Deadline)

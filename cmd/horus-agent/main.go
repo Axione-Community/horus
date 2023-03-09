@@ -174,7 +174,7 @@ func main() {
 	}
 
 	if len(*promEP) != 0 {
-		if err := agent.NewPromClient(*promEP, *promTimeout, *promBatchSize, *promDeadline, ctx); err != nil {
+		if err := agent.NewPromClient(*promEP, *promTimeout, *promBatchSize, *promDeadline); err != nil {
 			glog.Exitf("init Prom client: %v", err)
 		}
 	}
