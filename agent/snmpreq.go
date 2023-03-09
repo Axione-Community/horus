@@ -178,7 +178,7 @@ func (s *SnmpRequest) Dial(ctx context.Context) error {
 		}(i, cli)
 	}
 	wg.Wait()
-	s.Debug(2, "dial: done with all connections")
+	s.Debug(2, "dial: all connections attempts completed")
 	if len(errs) == len(s.snmpClis) {
 		return fmt.Errorf("dial: unable to get any snmp conn: %v", <-errs)
 	}

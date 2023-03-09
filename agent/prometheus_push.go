@@ -90,6 +90,10 @@ func (c *PromClient) Push(pollRes PollResult) {
 }
 
 func (c *PromClient) flushPromBuffer() {
+	if len(c.tsQueue) == 0 {
+		return
+	}
+
 	var tseries []prompb.TimeSeries
 	c.Lock()
 	tseries = c.tsQueue
@@ -151,6 +155,7 @@ func (c *PromClient) checkDeadline() {
 		case <-c.ctx.Done():
 			log.Infof("prom: context done: flushing buffer (%d tseries)", len(c.tsQueue))
 			c.flushPromBuffer()
+			return
 		case <-ticker.C:
 			minLastFlush := time.Now().Add(-c.Deadline)
 			if c.lastFluched.Before(minLastFlush) {
