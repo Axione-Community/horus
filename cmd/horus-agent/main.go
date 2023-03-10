@@ -63,7 +63,7 @@ var (
 	promEP        = getopt.ListLong("prom-endpoints", 'P', "Prometheus endpoint list for remote write", "url1,url2,...")
 	promTimeout   = getopt.IntLong("prom-timeout", 'T', 5, "Prometheus write timeout", "sec")
 	promBatchSize = getopt.IntLong("prom-batch-size", 'B', 5000, "Number of timeseries to accumulate before a remote write")
-	promDeadline  = getopt.IntLong("prom-push-deadline", 'D', 300, "Max time to wait before remote write even if buffer is not full", "sec")
+	promDeadline  = getopt.IntLong("prom-push-deadline", 'D', 120, "Max time to wait before remote write even if buffer is not full", "sec")
 
 	// influx conf
 	influxHost    = getopt.StringLong("influx-host", 0, "", "influx server address (push to influx disabled if empty)")
