@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"horus/log"
@@ -99,7 +100,7 @@ func (c *PromClient) flushPromBuffer() {
 	c.lastFluched = time.Now()
 	c.Unlock()
 
-	log.Debugf("prom: writing %d timeseries to prom", len(tseries))
+	log.Debugf("prom: pushing %d timeseries to prom", len(tseries))
 	pb, err := proto.Marshal(&prompb.WriteRequest{Timeseries: tseries})
 	if err != nil {
 		log.Errorf("prom: proto marshal: %v", err)
@@ -108,40 +109,41 @@ func (c *PromClient) flushPromBuffer() {
 	data := snappy.Encode(nil, pb)
 
 	var wg sync.WaitGroup
-	for _, ep := range c.Endpoints {
+	for i, ep := range c.Endpoints {
 		wg.Add(1)
-		go func(ep string) {
+		go func(i int, ep string) {
 			defer wg.Done()
-			req, err := http.NewRequestWithContext(StopCtx, http.MethodPost, ep, bytes.NewBuffer(data))
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.Timeout)*time.Second)
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, ep, bytes.NewBuffer(data))
 			if err != nil {
-				log.Errorf("prom: http req for %s: %v", ep, err)
+				log.Errorf("prom[%d]: http req for %s: %v", i, ep, err)
 				return
 			}
+			defer cancel()
 			req.Header.Add("X-Prometheus-Remote-Write-Version", "0.1.0")
 			req.Header.Add("Content-Encoding", "snappy")
 			req.Header.Set("Content-Type", "application/x-protobuf")
-			client := &http.Client{Timeout: time.Duration(c.Timeout) * time.Second}
-			log.Debugf("prom: posting %d metrics to %s", len(tseries), ep)
+			log.Debugf("prom[%d]: posting %d metrics to %s", i, len(tseries), ep)
 			start := time.Now()
-			resp, err := client.Do(req)
+			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
-				log.Errorf("prom: remote write to %s: %v", ep, err)
+				log.Errorf("prom[%d]: remote write to %s: %v", i, ep, err)
 				return
 			}
 			defer resp.Body.Close()
 			if resp.StatusCode/100 != 2 {
 				body, _ := io.ReadAll(resp.Body)
-				log.Errorf("prom: remote write to %s: returned %d: %s", ep, resp.StatusCode, body)
+				log.Errorf("prom[%d]: remote write to %s: returned %d: %s", i, ep, resp.StatusCode, body)
 				c.totalPushError++
 			} else {
 				c.totalPushCount++
 				c.lastPushDurationMs = int(time.Since(start) / time.Millisecond)
-				log.Infof("prom: remote write to %s succeeded in %dms: %s", ep, c.lastPushDurationMs, resp.Status)
+				log.Infof("prom[%d]: remote write to %s succeeded in %dms: %s", i, ep, c.lastPushDurationMs, resp.Status)
 			}
 			snmpPushCount.Set(float64(c.totalPushCount))
 			snmpPushErrorCount.Set(float64(c.totalPushError))
 			snmpPushDuration.Set(float64(c.lastPushDurationMs) / 1000)
-		}(ep)
+		}(i, ep)
 	}
 	wg.Wait()
 }
