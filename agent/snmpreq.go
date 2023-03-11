@@ -237,6 +237,9 @@ func (s *SnmpRequest) getMeasure(ctx context.Context, meas model.ScalarMeasure) 
 
 	snmpResults := make(chan snmpgetResult)
 	for i, cli := range s.snmpClis {
+		if cli.Conn == nil {
+			s.Debugf(1, "con#%d: measure %s: skipping failed conn", i, meas.Name)
+		}
 		go func(i int, cli *gosnmp.GoSNMP) {
 			s.Debugf(3, "con#%d: measure %s: metric loop started", i, meas.Name)
 			for metric := range metrics {
