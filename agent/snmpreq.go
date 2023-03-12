@@ -373,31 +373,40 @@ func (s *SnmpRequest) walkMeasure(ctx context.Context, measure model.IndexedMeas
 		return IndexedResults{}, nil
 	}
 
-	byOid := model.GroupByOid(measure.Metrics)
-	groupedMetrics := make(chan []model.Metric, len(byOid))
-	defer close(groupedMetrics)
-	walkResults := make(chan snmpwalkResult)
-	for _, grouped := range byOid {
-		groupedMetrics <- grouped
-	}
-	s.Debugf(2, "grouped metric count: %d", len(groupedMetrics))
-	for conIdx := range s.snmpClis {
-		go func(conIdx int) {
-			for grouped := range groupedMetrics {
+	groupedMetrics := model.GroupByOid(measure.Metrics)
+	walkResults := make([]snmpwalkResult, 0, len(groupedMetrics))
+	s.Debugf(2, "grouped metrics: %d, snmp clis: %d", len(groupedMetrics), len(s.snmpClis))
+	var wg sync.WaitGroup
+	for conID := range s.snmpClis {
+		wg.Add(1)
+		go func(conID int) {
+			defer wg.Done()
+			s.Debugf(3, ">con#%d: start polling device", conID)
+			for i, grouped := range groupedMetrics {
+				if i%len(s.snmpClis) != conID {
+					// simple RR distribution over connections
+					continue
+				}
 				oid, name := grouped[0].Oid, grouped[0].Name
 				start := time.Now()
-				s.Debugf(3, "con#%d: start walking indexed oid %s [%s], %d metric(s)", conIdx, oid, name, len(grouped))
-				groupedRes, err := s.walkMetric(ctx, grouped, conIdx, measure.UseAlternateCommunity)
-				walkResults <- snmpwalkResult{oid, groupedRes, err}
-				s.Debugf(3, "con#%d: done walking indexed oid %s [%s]: took %v", conIdx, oid, name, time.Since(start).Truncate(time.Millisecond))
+				s.Debugf(3, "con#%d: start walking indexed oid %s [%s], %d metric(s)", conID, oid, name, len(grouped))
+				groupedRes, err := s.walkMetric(ctx, grouped, conID, measure.UseAlternateCommunity)
+				walkResults = append(walkResults, snmpwalkResult{oid, groupedRes, err})
+				s.Debugf(3, "con#%d: done walking indexed oid %s [%s], took %v, err: %v", conID, oid, name, time.Since(start).Truncate(time.Millisecond), err)
+				if ErrIsTimeout(err) {
+					s.Infof(">con#%d: stop polling after timeout", conID)
+					s.snmpClis[conID].Close()
+					return
+				}
 			}
-			s.Debugf(2, "con#%d: measure %s: walk completed", conIdx, measure.Name)
-		}(conIdx)
+			s.Debugf(2, "con#%d: measure %s: walk completed", conID, measure.Name)
+		}(conID)
 	}
+	wg.Wait()
 
+	s.Debugf(3, "%s: polling done, building tab results", s.Device.Hostname)
 	var walkErr error
-	for range byOid {
-		res := <-walkResults
+	for _, res := range walkResults {
 		if res.err != nil {
 			walkErr = fmt.Errorf("walk oid %s: %v", res.oid, res.err)
 			continue
