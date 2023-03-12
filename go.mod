@@ -12,7 +12,7 @@ require (
 	github.com/optiopay/kafka/v2 v2.1.1
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/prometheus v0.42.0
-	github.com/sipsolutions/gosnmp v1.36.0
+	github.com/sipsolutions/gosnmp v1.36.1
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569
 	github.com/vma/getopt v1.0.0
 	github.com/vma/glog v1.5.1
