@@ -359,6 +359,20 @@ func (r Result) String() string {
 	return fmt.Sprintf("<name:%s exported_name:%s oid:%s suffix:%s snmptype:%s val:%v idx:%s>", r.Name, r.ExportedName, r.Oid, r.suffix, r.snmpType, r.Value, r.Index)
 }
 
+// AsSNMPWalk prints result like snmpwalk command
+func (r Result) AsSNMPWalk() string {
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "%s.%s = ", r.Oid, r.Index)
+	switch val := r.Value.(type) {
+	case []byte:
+		fmt.Fprintf(&b, "(%s) %q\n", r.snmpType, val)
+	default:
+		fmt.Fprintf(&b, "(%s) %v\n", r.snmpType, val)
+	}
+	return b.String()
+}
+
 // String returns a string representation of an IndexedResults.
 func (x IndexedResults) String() string {
 	var b strings.Builder
