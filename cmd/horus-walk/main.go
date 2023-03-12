@@ -111,12 +111,6 @@ func main() {
 		return
 	}
 	for _, m := range res.Indexed[0].Results[0] {
-		fmt.Printf("%s.%s = ", m.Oid, m.Index)
-		switch val := m.Value.(type) {
-		case []byte:
-			fmt.Printf("%q\n", val)
-		default:
-			fmt.Printf("%v\n", val)
-		}
+		fmt.Printf("%s", m.AsSNMPWalk())
 	}
 }
