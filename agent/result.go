@@ -361,16 +361,18 @@ func (r Result) String() string {
 
 // String returns a string representation of an IndexedResults.
 func (x IndexedResults) String() string {
-	str := x.Name + " = [\n"
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "%s  = [\n", x.Name)
 	for _, xr := range x.Results {
-		str += "  [\n"
+		b.WriteString("  [\n")
 		for _, r := range xr {
-			str += "  " + r.String() + ",\n"
+			fmt.Fprintf(&b, "  %s,\n", r)
 		}
-		str += "  ]\n"
+		b.WriteString("  ]\n")
 	}
-	str += "]\n"
-	return str
+	b.WriteString("]\n")
+	return b.String()
 }
 
 // MakeIndexed builds an indexed results set from a TabularResults array.
