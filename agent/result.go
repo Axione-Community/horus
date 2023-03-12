@@ -250,6 +250,13 @@ func MakeResult(pdu gosnmp.SnmpPDU, metric model.Metric) (Result, error) {
 	}
 	for _, pp := range metric.PostProcessors {
 		switch val := res.Value.(type) {
+		case string:
+			switch pp {
+			case "trim":
+				res.Value = strings.TrimSpace(val)
+			default:
+				log.Warningf("post processor: %s: unimplemented for type %T (pdu type %v)", pp, res.Value, pdu.Type)
+			}
 		case []byte:
 			switch pp {
 			case "parse-hex-be":
