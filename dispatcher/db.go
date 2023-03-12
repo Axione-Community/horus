@@ -108,7 +108,7 @@ func PrepareQueries() error {
 	unlockFromOngoingStmt, err = db.Prepare(`UPDATE devices
                                                 SET is_polling = false
                                               WHERE last_polled_at < NOW() - (polling_frequency::TEXT || ' seconds')::INTERVAL
-                                                AND id NOT IN ($1)`)
+                                                AND NOT (id = ANY($1::int[]))`)
 	if err != nil {
 		return fmt.Errorf("prepare unlockFromOngoingStmt: %v", err)
 	}
