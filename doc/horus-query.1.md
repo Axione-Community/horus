@@ -66,7 +66,7 @@ Options
 BUGS
 ====
 
-See GitHub Issues: <https://github.com/kosctelecom/horus/issues>
+See GitHub Issues: <https://github.com/sipsolutions/horus/issues>
 
 AUTHOR
 ======
@@ -76,4 +76,4 @@ Valli A. Vallimamod <vma@sip.solutions>
 SEE ALSO
 ========
 
-**horus-dispatcher(1)**, **horus-agent(1)**
+**horus-dispatcher(1)**, **horus-agent(1)**, **horus-walk(1)**

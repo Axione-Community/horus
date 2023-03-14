@@ -8,15 +8,16 @@ NAME
 SYNOPSIS
 ========
 
-| **horus-agent** \[**-h**|**-v**] \[**-d** _level_] \[**--fping-max-procs** _value_] \[**--fping-packet-count** _count_]
-|                 \[**--influx-db** _value_] \[**--influx-host** _value_]
-|                 \[**--influx-password** _value_] \[**--influx-retries** _value_]
-|                 \[**--influx-rp** _value_] \[**--influx-timeout** _value_]
-|                 \[**--influx-user** _value_] \[**-j** _count_] \[**-k** _host1,host2,..._]
-|                 \[**--kafka-partition** _value_] \[**--kafka-topic** _value_] \[**--log** _dir_]
-|                 \[**-m** percent] \[**--mock**] \[**-n** _host1,host2,..._]
-|                 \[**--nats-name** _value_]  \[**--nats-reconnect-delay** _seconds_]
-|                 \[**--nats-subject** _value_] \[**-p** _port_] \[**--prom-max-age** _sec_]
+| **horus-agent** \[**-h**|**-v**] \[**-B** _value_] \[**-b** _value_] \[**-d** _level_] \[**--fping-max-procs** _value_]
+|                 \[**--fping-packet-count** _count_] \[**--influx-db** _value_]
+|                 \[**--influx-host** _value_] \[**--influx-password** _value_]
+|                 \[**--influx-retries** _value_] \[**--influx-rp** _value_]
+|                 \[**--influx-timeout** _value_] \[**--influx-user** _value_] \[**-j** _count_]
+|                 \[**-k** _host1,host2,..._] \[**--kafka-partition** _value_] 
+|                 \[**--kafka-topic** _value_] \[**--log** _dir_] \[**-m** percent] \[**--mock**]
+|                 \[**-n** _host1,host2,..._] \[**--nats-name** _value_]
+|                 \[**--nats-reconnect-delay** _seconds_] \[**--nats-subject** _value_]
+|                 \[**-p** _port_] \[**-P** _url1,url2,..._] \[**--prom-max-age** _sec_]
 |                 \[**--prom-sweep-frequency** _sec_] \[**-s** _sec_] \[**-t** _msec_]
 
 DESCRIPTION
@@ -25,19 +26,24 @@ DESCRIPTION
 The agent receives job requests from the dispatcher over http. If it has remaining capacity, it accepts and queues the job. The job is an json document containing all
 information about the device to poll, the metrics to retrieve and the backends where to send the results.
 
-At the end of a polling job, the agent posts the results to Kafka, NATS or InfluxBD and keeps them in memory for Prometheus scraping. It also sends back a report to the dispatcher
+At the end of a polling job, the agent posts the results to Kafka, NATS or InfluxDB and keeps them in memory for Prometheus scraping. It also sends back a report to the dispatcher
 with the polling duration and error if any. Ping results (min, max, avg, loss) are kept in memory for Prometheus scraping only and no report is sent back to the agent.
 
 The result posted to Kafka is a big json document containing the aggregated poll results for each device. You can use **horus-query(1)** to get the same data on stdout.
 
-The Prometheus metrics are named using the `<measure name>_<metric name>` pattern, for example: sysInfo\_sysUpTime and they have the following default labels: id, host,
-vendor, model and category of the polled device.
+The Prometheus metrics are named using the `<measure name>_<metric name>` pattern, for example: `sysInfo_sysUpTime` and they have the following default labels: id, host,
+vendor, model and category of the polled device. The snmp metrics are pushed in batch using prometheus remote-write API; the `/pingmetrics` and `/metrics` endpoints are still available
+for scrapping ping metrics and agent monitoring data.
 
 Options
 =======
 
 General options
 ---------------
+
+-b, --snmp-buf-size=value
+
+:   UDP receive buffer size for snmp replies (in bytes) (default: 6000)
 
 -d, --debug
 
@@ -164,6 +170,18 @@ NATS related options
 Prometheus related options
 --------------------------
 
+-B, --prom-batch-size=value
+
+:   Number of timeseries to accumulate before a remote write (default: 5000)
+
+-D, --prom-push-deadline=sec
+
+:   Max time to wait before remote write even if buffer is not full (default: 120)
+
+-P, --prom-endpoints=url1,url2,...
+
+:   Prometheus endpoint list for remote write
+
     --prom-max-age
 
 :   Specifies the maximum time in second to keep Prometheus samples in memory. If set to 0 (default), Prometheus collectors are disabled.
@@ -172,10 +190,15 @@ Prometheus related options
 
 :   Specifies the cleaning frequency in second of old Prometheus samples. Defaults to 120s.
 
+-T, --prom-timeout=sec
+
+:   Prometheus write timeout (default: 2)
+
+
 BUGS
 ====
 
-See GitHub Issues: <https://github.com/kosctelecom/horus/issues>
+See GitHub Issues: <https://github.com/sipsolutions/horus/issues>
 
 AUTHOR
 ======
@@ -185,4 +208,4 @@ Valli A. Vallimamod <vma@sip.solutions>
 SEE ALSO
 ========
 
-**horus-dispatcher(1)**, **horus-query(1)**
+**horus-dispatcher(1)**, **horus-query(1)**, **horus-walk(1)**

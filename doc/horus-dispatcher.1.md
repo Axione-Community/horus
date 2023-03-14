@@ -8,10 +8,12 @@ NAME
 SYNOPSIS
 ========
 
-| **horus-dispatcher** \[**-h**|**-v**] \[**-c** _url_] \[**-d** _level_] \[**-g** _seconds_] \[**-i** _address_] \[**-k** _seconds_] \[**--lock-dsn** url]
-|                      \[**-l** _value_] \[**--log** _dir_] \[**--max-load-delta** _value_] \[**--ping-batch-count** _value_]
-|                      \[**-p** _port_] \[**-q** _seconds_] \[**-r** _days_]
-|                      \[**--report-flush-freq hours**] \[**-u** _seconds_] \[**-w** _sec_]
+| **horus-dispatcher** \[**-h**|**-v**] \[**-c** _url_] \[**-C** url] \[**-d** _level_] \[**--device-max-lock-time** _seconds_]
+|                      \[**-g** _seconds_] \[**-H** _host1:port1,host2:port2,..._]
+|                      \[**-i** _address_] \[**-k** _seconds_] \[**-l** _value_] \[**--log** _dir_]
+|                      \[**-m** _value_] \[**--max-load-delta** _value_]
+|                      \[**--ping-batch-count** _value_] \[**-p** _port_] \[**-q** _seconds_] 
+|                      \[**-u** _seconds_] \[**-w** _sec_]
 
 DESCRIPTION
 ===========
@@ -35,13 +37,25 @@ Options
 
 :   Specifies the postgres db connection DSN like `postgres://horus:secret@localhost/horus`.
 
+-C, --lock-dsn
+
+:   Specifies the postgres db DSN to use for advisory locks. Must be different from main DSN.
+
 -d, --debug
 
 :   Specifies the debug level from 1 to 3. Defaults to 0 (disabled).
 
+    --device-max-lock-time
+
+:   Force unlock devices locked longer than this delay (default: 600)
+
 -g, --db-ping-freq
 
 :   Specifies the db query frequency in seconds for new available ping jobs. Defaults to 10s; when set to 0, ping queries are disabled.
+
+-H, --cluster-hosts
+
+:   Lists all hosts of the dispatcher cluster
 
 -h, --help
 
@@ -56,19 +70,19 @@ Options
 
 :   Specifies the agent keep-alive requests frequency in seconds. Defaults to 30s.
 
-    --lock-dsn=url
+-l, --lock-id
 
-:   postgres db DSN to use for advisory locks in active/passive mode. Must be different from main DSN to avoid blocking auto-vacuums.
-
--l, --lock-id=value
-
-:   pg advisory lock id to ensure single running process. First started process acquires the locks and becomes master. This behaviour is disabled
+:   Defines postgres advisory lock id to ensure single running process. First started process acquires the locks and becomes master. This behaviour is disabled
     by default or when the lock ID is set to 0.
 
     --log
 
 :   Specifies the directory where the log files are written. The files are created and rotated by the glog lib (https://github.com/vma/glog).
     If not set, logs are written to stderr.
+
+-m, --db-max-snmp-jobs
+
+:   Defines  maximum number of snmp jobs to retrieve from db at each query (default: 200)
 
     --max-load-delta
 
@@ -88,14 +102,6 @@ Options
 
 :   Specifies the check frequency in seconds for new available snmp polling jobs in database. Defaults to 30s; when set to 0, snmp queries are disabled.
 
--r, --error-flush-freq=hours
-
-:   Specifies the number of hours during which to keep poll errors in reports table (successful reports are not kept). Defaults to 4 hours; Flushing is disabled when set to 0. **DEPRECATED**
-
-    --report-flush-freq=hours
-
-:   Specifies the db reports table flush frequency; all entries with null report\_received\_at older than this period are deleted. Defaults to 3 hours. **DEPRECATED**
-
 -u, --device-unlock-freq
 
 :   Specifies the frequency in seconds for the device unlocker goroutine. On each keep-alive, the agents return to the dispatcher their ongoing requests.
@@ -112,7 +118,7 @@ Options
 BUGS
 ====
 
-See GitHub Issues: <https://github.com/kosctelecom/horus/issues>
+See GitHub Issues: <https://github.com/sipsolutions/horus/issues>
 
 AUTHOR
 ======
@@ -122,4 +128,4 @@ Valli A. Vallimamod <vma@sip.solutions>
 SEE ALSO
 ========
 
-**horus-agent(1)**, **horus-query(1)**
+**horus-agent(1)**, **horus-query(1)**, **horus-walk(1)**

@@ -67,12 +67,14 @@ The post processors allow to normalize a retrieved metric that has a string or n
     - `parse-hex-be`: parses the hexadecimal string as a numeric value in big-endian order.
     - `extract-int` or `extract-float`: extracts a numeric value from a string. For example: "Rx level: -12.5 dBm" returns -12.5 as a float.
     - `fmt-macaddr`: formats the `OctetString` value as a mac-address
+    - `extract-regex:<regex-with-group>`: extracts substring that matches the first sub-group of the provided regular expression in RE2 format (https://github.com/google/re2/wiki/Syntax)
 
 - For numeric values:
     - `div-<divisor>` or `div:<divisor>`: divides the retrieved value by the divisor, a float number.
     - `mul-<multiplicator>` or `mul:<multiplicator>`: multiplies the retrieved value by the multiplicator, a float number.
     - `ln` and `log10`: calculates the natural and base-10 logarithm of the input value.
 
+ It is possible to chain multiple post processors provided that the output type of the previous matches the input type of the next.
 
 ## measures table
 
@@ -90,11 +92,6 @@ The post processors allow to normalize a retrieved metric that has a string or n
 
 - A profile is defined by the tuple (category, vendor, model) that is affected to a device. It allows to easily define a list of measures common to a group of devices (routers, switch, etc.)
 - Profiles and measures have a N:N relationship defined in the `profile_measures` table.
-
-## reports table
-
-This table keeps a list of ongoing polling jobs. When a report is received from an agent, the entry is removed if there was no error. Otherwise, the poll error is saved for inspection.
-Rows whose `requested_at` field is older than a defined delay are periodically removed by the dispatcher (parametrable via `--poll-error-retention-period` param).
 
 ## metric\_poll\_times table
 
