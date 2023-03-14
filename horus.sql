@@ -101,18 +101,6 @@ CREATE TABLE profile_measures (
     UNIQUE (profile_id, measure_id)
 );
 
-CREATE TABLE reports (
-    id serial PRIMARY KEY,
-    uuid character varying NOT NULL UNIQUE,
-    device_id integer NOT NULL REFERENCES devices(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    agent_id integer NOT NULL REFERENCES agents(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    requested_at timestamp with time zone NOT NULL,
-    post_status character varying NOT NULL,
-    report_received_at timestamp with time zone,
-    poll_duration_ms integer,
-    poll_error character varying NOT NULL DEFAULT ''
-);
-
 ALTER TABLE agents OWNER TO horus;
 ALTER TABLE profiles OWNER TO horus;
 ALTER TABLE devices OWNER TO horus;
@@ -121,4 +109,3 @@ ALTER TABLE measures OWNER TO horus;
 ALTER TABLE measure_metrics OWNER TO horus;
 ALTER TABLE metric_poll_times OWNER TO horus;
 ALTER TABLE profile_measures OWNER TO horus;
-ALTER TABLE reports OWNER TO horus;

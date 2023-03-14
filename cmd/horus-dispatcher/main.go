@@ -65,9 +65,6 @@ var (
 	lockDSN         = getopt.StringLong("lock-dsn", 'C', "", "postgres db DSN to use for advisory locks. Must be different from main DSN.", "url")
 	clusterHosts    = getopt.ListLong("cluster-hosts", 'H', "list of all hosts of the dispatcher cluster", "host1:port1,host2:port2,...")
 	dbMaxSnmpJobs   = getopt.IntLong("db-max-snmp-jobs", 'm', 200, "maximum number of snmp jobs to retrieve from db at each query")
-
-	dbPollErrRP   = getopt.IntLong("error-flush-freq", 'r', 4, "how long to keep poll errors in reports table (0 is forever) *DEPRECATED*", "hours")
-	dbFlusherFreq = getopt.IntLong("report-flush-freq", 0, 2, "db reports table flush frequency (all entries with report_received_at=null older than this period are deleted) *DEPRECATED*", "hours")
 )
 
 func main() {
