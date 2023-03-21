@@ -372,11 +372,11 @@ func (r Result) AsSNMPWalk() string {
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "%s.%s = ", r.Oid, r.Index)
-	switch val := r.Value.(type) {
+	switch v := r.Value.(type) {
 	case []byte:
-		fmt.Fprintf(&b, "(%s) %q\n", r.snmpType, val)
+		fmt.Fprintf(&b, "(%s) %q\n", r.snmpType, v)
 	default:
-		fmt.Fprintf(&b, "(%s) %v\n", r.snmpType, val)
+		fmt.Fprintf(&b, "(%s) [%T] %s\n", r.snmpType, v, toString(v))
 	}
 	return b.String()
 }
@@ -618,4 +618,19 @@ func littleEndianUint(b []byte) (uint64, error) {
 		return 0, fmt.Errorf("littleEndianUint: invalid slice size %d", len(b))
 	}
 	return res, nil
+}
+
+// toString formats int/floats values without scientific notation.
+// Useful when values are used as labels.
+func toString(val interface{}) string {
+	var s string
+	switch v := val.(type) {
+	case float64:
+		s = strconv.FormatFloat(v, 'f', -1, 64)
+	case int:
+		s = fmt.Sprintf("%d", v)
+	default:
+		s = fmt.Sprint(v)
+	}
+	return s
 }

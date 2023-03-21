@@ -183,7 +183,7 @@ func (p *PollResult) SNMPMetricsToPromTS() []prompb.TimeSeries {
 				labels = append(labels, prompb.Label{Name: k, Value: v})
 			}
 			if res.AsLabel {
-				labels = append(labels, prompb.Label{Name: res.Name, Value: fmt.Sprint(res.Value)})
+				labels = append(labels, prompb.Label{Name: res.Name, Value: toString(res.Value)})
 				sample.Value = 1
 			} else {
 				switch v := res.Value.(type) {
@@ -219,7 +219,7 @@ func (p *PollResult) SNMPMetricsToPromTS() []prompb.TimeSeries {
 			}
 			for _, res := range indexedRes {
 				if res.AsLabel {
-					labels = append(labels, prompb.Label{Name: res.Name, Value: fmt.Sprint(res.Value)})
+					labels = append(labels, prompb.Label{Name: res.Name, Value: toString(res.Value)})
 				}
 			}
 			if len(labels) == len(indexedRes) {
