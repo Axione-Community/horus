@@ -164,7 +164,8 @@ var numberPat = regexp.MustCompile(`[-+]?\d*\.?\d+`)
 func (r *SnmpRequest) MakePollResult() PollResult {
 	tags := make(map[string]string)
 	tags["id"] = strconv.Itoa(r.Device.ID)
-	tags["host"] = r.Device.Hostname
+	tags["hostname"] = r.Device.Hostname
+	tags["instance"] = r.Device.IPAddress
 	tags["vendor"] = r.Device.Vendor
 	tags["model"] = r.Device.Model
 	tags["category"] = r.Device.Category
