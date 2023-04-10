@@ -168,7 +168,7 @@ func (c *PromClient) checkDeadline() {
 
 func (p *PollResult) SNMPMetricsToPromTS() []prompb.TimeSeries {
 	var promTS []prompb.TimeSeries
-	stamp := p.stamp.UnixNano() / int64(time.Millisecond)
+	stamp := p.PollStart.UnixNano() / int64(time.Millisecond)
 
 	for _, scalar := range p.Scalar {
 		if !scalar.ToProm {
