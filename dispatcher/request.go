@@ -53,6 +53,9 @@ var (
 	// MaxSnmpJobs is the maximum number of polling jobs to retrieve from db
 	MaxSnmpJobs int
 
+	// PollingIntervalTolerance is the tolerance window in seconds to start new polling before its real due date
+	PollingIntervalTolerance = 1
+
 	sid = shortid.MustNew(0, "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$.", 1373)
 )
 
@@ -245,15 +248,15 @@ func RequestFromDB(devID int) (model.SnmpRequest, error) {
 // is no ongoing polling job and was last polled past its polling frequency.
 func SnmpJobs() ([]int, error) {
 	var devs []int
-	log.Debugf("retrieving available snmp jobs (max %d)", MaxSnmpJobs)
+	log.Debugf("retrieving available snmp jobs (max %d, interval tolerance: %ds)", MaxSnmpJobs, PollingIntervalTolerance)
 	err := db.Select(&devs, `SELECT id
                                FROM devices
                               WHERE active = true
                                 AND polling_frequency > 0
                                 AND is_polling = false
-                                AND (last_polled_at IS NULL OR EXTRACT(EPOCH FROM CURRENT_TIMESTAMP - last_polled_at) >= polling_frequency)
+                                AND (last_polled_at IS NULL OR EXTRACT(EPOCH FROM CURRENT_TIMESTAMP - last_polled_at) >= polling_frequency - $1)
                            ORDER BY last_polled_at NULLS LAST, id
-                           LIMIT $1`, MaxSnmpJobs)
+                           LIMIT $2`, PollingIntervalTolerance, MaxSnmpJobs)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}

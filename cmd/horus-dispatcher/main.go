@@ -69,6 +69,7 @@ var (
 
 func main() {
 	getopt.FlagLong(&dispatcher.MaxLoadDelta, "max-load-delta", 0, "max load delta allowed between agents before `unsticking` a device from its agent")
+	getopt.FlagLong(&dispatcher.PollingIntervalTolerance, "polling-interval-tolerance", 0, "tolerance interval to start a new polling job before its due time", "second")
 	getopt.SetParameters("")
 	getopt.Parse()
 

@@ -12,8 +12,9 @@ SYNOPSIS
 |                      \[**-g** _seconds_] \[**-H** _host1:port1,host2:port2,..._]
 |                      \[**-i** _address_] \[**-k** _seconds_] \[**-l** _value_] \[**--log** _dir_]
 |                      \[**-m** _value_] \[**--max-load-delta** _value_]
-|                      \[**--ping-batch-count** _value_] \[**-p** _port_] \[**-q** _seconds_] 
-|                      \[**-u** _seconds_] \[**-w** _sec_]
+|                      \[**--ping-batch-count** _value_]
+|                      \[**--polling-interval-tolerance** _second_] \[**-p** _port_]
+|                      \[**-q** _seconds_] \[**-u** _seconds_] \[**-w** _sec_]
 
 DESCRIPTION
 ===========
@@ -97,6 +98,10 @@ Options
 -p, --port
 
 :   Specifies the listen port of the API web server. Defaults to 8080.
+
+     --polling-interval-tolerance=second
+
+:   Specifies the tolerance interval to start a new polling job before its due time. Defaults to 1s.
 
 -q, --db-snmp-freq
 
