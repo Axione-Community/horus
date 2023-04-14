@@ -220,7 +220,7 @@ func handleDebugLevel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dbgLevel, err := strconv.Atoi(level)
-	if err != nil || dbgLevel < 0 || dbgLevel > 3 {
+	if err != nil || dbgLevel < 0 || dbgLevel > 4 {
 		log.Errorf("invalid level %s", level)
 		http.Error(w, "invalid debug level "+level, 400)
 		return
