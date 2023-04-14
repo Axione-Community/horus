@@ -160,14 +160,18 @@ func (s *snmpQueue) poll(ctx context.Context, req *SnmpRequest) {
 	ongoingReqs[req.UID] = req.Device.ID
 	ongoingMu.Unlock()
 	waiting--
+	req.Debugf(2, "snmp: dialing device")
 	if err := req.Dial(ctx); err != nil {
 		req.Errorf("unable to connect to snmp device: %v", err)
 		res := req.MakePollResult() // needed for report
 		res.pollErr = err
 		pollResults <- res
 	} else {
-		pollResults <- req.Poll(ctx)
+		req.Debugf(2, "snmp: start collecting")
+		res := req.Poll(ctx)
+		pollResults <- res
 		req.Close()
+		req.Debugf(2, "snmp: done collecting; poll started at: %s", res.PollStart.Format(time.StampMilli))
 	}
 	ongoingMu.Lock()
 	delete(ongoingReqs, req.UID)
