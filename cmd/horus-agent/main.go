@@ -99,6 +99,12 @@ func main() {
 
 	agent.Revision, agent.Branch, agent.Build = Revision, Branch, Build
 
+	var err error
+	agent.Hostname, err = os.Hostname()
+	if err != nil {
+		glog.Warningf("unable to get hostname: %v", err)
+	}
+
 	if *showVersion {
 		fmt.Printf("Revision:%s Branch:%s Build:%s\n", Revision, Branch, Build)
 		return

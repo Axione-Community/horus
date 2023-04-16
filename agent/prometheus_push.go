@@ -291,6 +291,9 @@ func (p *PollResult) pollStatsToPromTS() []prompb.TimeSeries {
 			labels = append(labels, prompb.Label{Name: tn, Value: tv})
 		}
 		labels = append(labels, prompb.Label{Name: "__name__", Value: k})
+		if Hostname != "" {
+			labels = append(labels, prompb.Label{Name: "poller", Value: Hostname})
+		}
 		samples := []prompb.Sample{{Timestamp: stamp, Value: v}}
 		promTS = append(promTS, prompb.TimeSeries{Labels: labels, Samples: samples})
 	}

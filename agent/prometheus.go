@@ -73,6 +73,8 @@ var (
 	Branch   string
 	Build    string
 
+	Hostname string
+
 	workersCount = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "agent_worker_count",
 		Help: "Number of max workers for this agent.",
