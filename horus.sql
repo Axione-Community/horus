@@ -44,7 +44,7 @@ CREATE TABLE devices (
     snmpv3_privacy_proto character varying NOT NULL DEFAULT '',
     snmpv3_security_level character varying NOT NULL DEFAULT '',
     tags json NOT NULL DEFAULT '{}'::json,
-    allowed_agent_ids []integer NOT NULL DEFAULT '{}'::integer[]
+    allowed_agent_ids integer[] NOT NULL DEFAULT '{}'::integer[],
     UNIQUE (hostname, ip_address)
 );
 
