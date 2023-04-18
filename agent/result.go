@@ -184,7 +184,7 @@ func (r *SnmpRequest) MakePollResult() PollResult {
 		DeviceID:   r.Device.ID,
 		AgentID:    r.AgentID,
 		IPAddr:     r.Device.IPAddress,
-		PollStart:  time.Now(),
+		PollStart:  r.pollStart,
 		Tags:       tags,
 		reportURLs: r.ReportURLs,
 	}

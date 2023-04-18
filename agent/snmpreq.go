@@ -45,6 +45,9 @@ type SnmpRequest struct {
 	// snmpClis is an array of gosnmp connections
 	snmpClis []*gosnmp.GoSNMP
 
+	// pollStart is time at which snmp connection is initiated
+	pollStart time.Time
+
 	// logger is the internal gosnmp compatible glog Logger.
 	log.Logger
 }

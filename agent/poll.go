@@ -161,6 +161,7 @@ func (s *snmpQueue) poll(ctx context.Context, req *SnmpRequest) {
 	ongoingMu.Unlock()
 	waiting--
 	req.Debugf(2, "snmp: dialing device")
+	req.pollStart = time.Now()
 	if err := req.Dial(ctx); err != nil {
 		req.Errorf("unable to connect to snmp device: %v", err)
 		res := req.MakePollResult() // needed for report
